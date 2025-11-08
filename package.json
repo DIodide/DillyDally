@@ -12,7 +12,6 @@
     "dev": "concurrently --names \"convex,frontend,backend\" --prefix-colors \"blue,green,yellow\" \"npx convex dev\" \"npm run dev --workspace=dillydally-frontend\" \"npm run dev --workspace=dillydally-express\"",
     "build": "npm run codegen && turbo build",
     "codegen": "npx convex codegen",
-    "postinstall": "npm install --workspaces --include-workspace-root",
     "start": "concurrently --names \"convex,frontend,backend\" --prefix-colors \"blue,green,yellow\" \"npx convex dev\" \"npm run preview --workspace=dillydally-frontend\" \"npm run start --workspace=dillydally-express\"",
     "install-all": "npm install && npm install --workspaces"
   },
