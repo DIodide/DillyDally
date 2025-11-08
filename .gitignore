@@ -7,6 +7,8 @@ node_modules/
 
 # Convex generated files
 convex/_generated/
+convex/**/*.js
+!convex/_generated/**/*.js
 
 # Build outputs
 dist/

@@ -1,0 +1,20 @@
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import path from 'path'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      '@convex': path.resolve(__dirname, '../convex'),
+    },
+    dedupe: ['react', 'react-dom'],
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'convex/react'],
+    esbuildOptions: {
+      resolveExtensions: ['.js', '.jsx', '.ts', '.tsx'],
+    },
+  },
+})
