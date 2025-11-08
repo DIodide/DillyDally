@@ -4,9 +4,10 @@ interface SessionCaptureProps {
   intervalMs?: number;
   quality?: number;
   maxWidth?: number;
+  onSessionChange?: (isActive: boolean) => void;
 }
 
-export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWidth = 1280 }: SessionCaptureProps) {
+export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWidth = 1280, onSessionChange }: SessionCaptureProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [captureCount, setCaptureCount] = useState(0);
@@ -119,6 +120,11 @@ export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWi
       // Set up frame callback
       isRecordingRef.current = true;
       setIsRecording(true);
+      
+      // Notify parent that session has started
+      if (onSessionChange) {
+        onSessionChange(true);
+      }
 
       if (videoRef.current && "requestVideoFrameCallback" in HTMLVideoElement.prototype) {
         const callback = (now: number) => {
@@ -162,6 +168,11 @@ export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWi
   const stopCapture = () => {
     isRecordingRef.current = false;
     setIsRecording(false);
+    
+    // Notify parent that session has stopped
+    if (onSessionChange) {
+      onSessionChange(false);
+    }
 
     // Cancel frame callback
     if (
