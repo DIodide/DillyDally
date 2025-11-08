@@ -2,7 +2,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dillydally-frontend/dist",
   "devCommand": "npm run dev --workspace=dillydally-frontend",
-  "installCommand": "npm install",
+  "installCommand": "rm -f package-lock.json dillydally-frontend/package-lock.json dillydally-express/package-lock.json && npm install",
   "framework": "vite",
   "rewrites": [
     {
