@@ -21,7 +21,7 @@ export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWi
   const fallbackIntervalRef = useRef<number | null>(null);
   const isRecordingRef = useRef<boolean>(false);
 
-  const apiBase = "http://localhost:3001";
+  const apiBase = import.meta.env.VITE_EXPRESS_URL;
 
   const captureAndUpload = async () => {
     if (!videoRef.current || !canvasRef.current || uploadInProgressRef.current) {
