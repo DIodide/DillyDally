@@ -70,6 +70,10 @@ VITE_CONVEX_URL=https://your-deployment-url.convex.cloud
 In a **new terminal window**, run:
 
 ```bash
+npm install
+```
+
+```bash
 npm run dev
 ```
 
