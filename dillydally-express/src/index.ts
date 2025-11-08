@@ -78,21 +78,6 @@ app.post("/api/screenshots", upload.single("image"), async (req, res) => {
     const base64 = req.file.buffer.toString("base64");
     const timestamp = req.body.ts || Date.now();
 
-    // // Save screenshot to disk for testing
-    // const uploadsDir = join(__dirname, "../../uploads");
-    // try {
-    //   await fs.access(uploadsDir);
-    // } catch {
-    //   // Directory doesn't exist, create it
-    //   await fs.mkdir(uploadsDir, { recursive: true });
-    // }
-
-    // const filename = `screenshot_${timestamp}.jpg`;
-    // const filepath = join(uploadsDir, filename);
-    // await fs.writeFile(filepath, req.file.buffer);
-
-    // Log summary (placeholder for future OpenAI Vision API call)
-    // console.log(`[Screenshot ${timestamp}] Saved to: ${filepath}`);
     console.log(`[Screenshot ${timestamp}] base64 length: ${base64.length}, prefix: ${base64.slice(0, 100)}`);
     // mismatch between typedef and actual implementation
     const response = await (client.responses.create as any)({
@@ -101,7 +86,17 @@ app.post("/api/screenshots", upload.single("image"), async (req, res) => {
         {
           role: "user",
           content: [
-            { type: "input_text", text: "what's in this image?" },
+            {
+              type: "input_text",
+              text: `Evaluate what the user is doing in the image to provide a binary classification of whether the user is doing something productive or not. Use your observations to populate the following json schema:
+              {
+                isProductive: bool,
+                summary: string,
+                current_tab: string | null // if not inside of a browser,
+                activity: string // 1-2 word phrase max ex: YouTube, Instagram, Essay Writing
+              }
+              `,
+            },
             {
               type: "input_image",
               image_url: `data:image/jpeg;base64,${base64}`,
