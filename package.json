@@ -10,7 +10,8 @@
   ],
   "scripts": {
     "dev": "concurrently --names \"convex,frontend,backend\" --prefix-colors \"blue,green,yellow\" \"npx convex dev\" \"npm run dev --workspace=dillydally-frontend\" \"npm run dev --workspace=dillydally-express\"",
-    "build": "npm run codegen && turbo build && echo '=== DEBUG: Current directory ===' && pwd && echo '=== DEBUG: Finding all dist directories ===' && find . -type d -name 'dist' -not -path './node_modules/*' && echo '=== DEBUG: Finding index.html ===' && find . -name 'index.html' -not -path './node_modules/*' && echo '=== DEBUG: Checking dillydally-frontend/dist ===' && ls -la dillydally-frontend/dist/ 2>&1 && echo '=== DEBUG: Full path ===' && realpath dillydally-frontend/dist 2>&1 || pwd",
+    "build": "npm run codegen && turbo build && npm run verify-build",
+    "verify-build": "echo '=== DEBUG: Current directory ===' && pwd && echo '=== DEBUG: Finding all dist directories ===' && find . -type d -name 'dist' -not -path './node_modules/*' 2>&1 && echo '=== DEBUG: Finding index.html ===' && find . -name 'index.html' -not -path './node_modules/*' 2>&1 && echo '=== DEBUG: Checking dillydally-frontend/dist ===' && ls -la dillydally-frontend/dist/ 2>&1 && echo '=== DEBUG: Full path ===' && (cd dillydally-frontend && pwd && ls -la dist/ 2>&1) || echo 'Failed to find dist'",
     "codegen": "npx convex codegen",
     "start": "concurrently --names \"convex,frontend,backend\" --prefix-colors \"blue,green,yellow\" \"npx convex dev\" \"npm run preview --workspace=dillydally-frontend\" \"npm run start --workspace=dillydally-express\"",
     "install-all": "npm install && npm install --workspaces"
