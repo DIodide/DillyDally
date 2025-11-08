@@ -1,5 +1,5 @@
 {
-  "buildCommand": "bash scripts/vercel-build.sh",
+  "buildCommand": "npm run build",
   "outputDirectory": "dillydally-frontend/dist",
   "devCommand": "npm run dev --workspace=dillydally-frontend",
   "installCommand": "rm -rf node_modules */node_modules */*/package-lock.json && npm i --include=optional && npm i -w dillydally-frontend --include=optional @rollup/rollup-linux-x64-gnu",
