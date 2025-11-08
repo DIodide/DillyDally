@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "packageManager": "npm@10.9.3",
   "workspaces": [
     "dillydally-frontend",
     "dillydally-express"
@@ -12,10 +13,10 @@
     "install-all": "npm install && npm install --workspaces"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "turbo": "^2.6.0"
   },
   "dependencies": {
     "convex": "^1.17.2"
   }
 }
-
