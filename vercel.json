@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run build && echo '=== DEBUG: Current directory ===' && pwd && echo '=== DEBUG: Listing root ===' && ls -la | head -10 && echo '=== DEBUG: Checking dillydally-frontend/dist ===' && ls -la dillydally-frontend/dist/ 2>&1 && echo '=== DEBUG: Full path ===' && find . -name 'index.html' -path '*/dist/*' 2>&1",
   "outputDirectory": "dillydally-frontend/dist",
   "devCommand": "npm run dev --workspace=dillydally-frontend",
   "installCommand": "rm -rf node_modules */node_modules */*/package-lock.json && npm i --include=optional && npm i -w dillydally-frontend --include=optional @rollup/rollup-linux-x64-gnu",
