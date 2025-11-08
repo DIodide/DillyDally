@@ -6,7 +6,7 @@ node_modules/
 .env
 
 # Convex generated files
-convex/_generated/
+# convex/_generated/  # Commented out - files are now committed for CI/CD
 convex/**/*.js
 !convex/_generated/**/*.js
 
