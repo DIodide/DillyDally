@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm install --include=optional @rollup/rollup-linux-x64-gnu && tsc -b && vite build",
+    "build": "sh -c '[ -n \"$VERCEL\" ] && npm install --include=optional @rollup/rollup-linux-x64-gnu || true' && tsc -b && vite build",
     "check-types": "tsc --noEmit",
     "lint": "eslint .",
     "preview": "vite preview",
