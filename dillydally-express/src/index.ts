@@ -9,7 +9,6 @@ import { dirname, join } from "path";
 import { promises as fs } from "fs";
 import OpenAI from "openai";
 
-
 // Load environment variables from both the root .env.local file and the project directory's .env.local
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -95,7 +94,8 @@ app.post("/api/screenshots", upload.single("image"), async (req, res) => {
     // Log summary (placeholder for future OpenAI Vision API call)
     // console.log(`[Screenshot ${timestamp}] Saved to: ${filepath}`);
     console.log(`[Screenshot ${timestamp}] base64 length: ${base64.length}, prefix: ${base64.slice(0, 100)}`);
-    const response = await client.responses.create({
+    // mismatch between typedef and actual implementation
+    const response = await (client.responses.create as any)({
       model: "gpt-4.1-mini",
       input: [
         {
