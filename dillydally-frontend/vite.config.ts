@@ -5,6 +5,10 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  build: {
+    outDir: path.resolve(__dirname, '../dist'),
+    emptyOutDir: true,
+  },
   resolve: {
     alias: {
       '@convex': path.resolve(__dirname, '../convex'),
