@@ -59,21 +59,14 @@ npx convex dev
 ```
 
 This will:
+
 - Prompt you to log in with GitHub
 - Create a new Convex project
 - Generate the `.env.local` file with your `CONVEX_URL`
 - Create the `convex/_generated/` folder with type definitions
 - Watch for changes to your Convex functions
 
-### 3. Import Sample Data
-
-Once Convex is running, in a new terminal, import the sample tasks:
-
-```bash
-npx convex import --table tasks sampleData.jsonl
-```
-
-### 4. Configure Environment Variables
+### 3. Configure Environment Variables
 
 **For the Frontend:**
 
@@ -83,7 +76,7 @@ Create `dillydally-frontend/.env.local`:
 VITE_CONVEX_URL=<your-convex-url-from-root-.env.local>
 ```
 
-Or simply copy the CONVEX_URL from the root `.env.local` and prefix it with `VITE_`.
+Or simply copy the CONVEX*URL from the root `.env.local` and prefix it with `VITE*`.
 
 **For the Backend:**
 
@@ -100,6 +93,7 @@ npm run dev
 ```
 
 This will start all three services concurrently with colored output:
+
 - **[convex]** (blue): Convex development server on the cloud
 - **[frontend]** (green): Vite dev server at `http://localhost:5173`
 - **[backend]** (yellow): Express server at `http://localhost:3001`
@@ -109,16 +103,19 @@ This will start all three services concurrently with colored output:
 If you prefer to run services separately:
 
 **Convex:**
+
 ```bash
 npx convex dev
 ```
 
 **Frontend:**
+
 ```bash
 npm run dev --workspace=dillydally-frontend
 ```
 
 **Backend:**
+
 ```bash
 npm run dev --workspace=dillydally-express
 ```
@@ -128,6 +125,7 @@ npm run dev --workspace=dillydally-express
 ### Express Backend
 
 - **GET /** - Health check endpoint
+
   ```json
   {
     "status": "ok",
@@ -212,12 +210,14 @@ Ensure the Convex dev server is running. It generates the types in `convex/_gene
 ### Express server can't connect to Convex
 
 Check that:
+
 1. The root `.env.local` exists and has the `CONVEX_URL`
 2. The Express server is loading the environment variables correctly
 
 ### Port already in use
 
 If ports 5173 (frontend) or 3001 (backend) are in use, you can change them:
+
 - Frontend: Add `--port <number>` to the dev script
 - Backend: Set `PORT` environment variable
 
@@ -238,4 +238,3 @@ If ports 5173 (frontend) or 3001 (backend) are in use, you can change them:
 ## License
 
 MIT
-
