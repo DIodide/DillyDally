@@ -1,0 +1,42 @@
+.container {
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+  padding: 16px;
+  max-width: 780px;
+  margin: 0 auto;
+}
+.controls {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.recal {
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #f7f7f7;
+  cursor: pointer;
+}
+.stage {
+  position: relative;
+  width: 730px;
+  height: 640px;
+  margin: 8px 0;
+}
+.readout {
+  margin-top: 8px;
+  font-size: 14px;
+}
+.angles {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+}
+.muted {
+  color: #666;
+}
+.hint {
+  color: #666;
+  margin-top: 4px;
+}
