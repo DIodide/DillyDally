@@ -2,7 +2,8 @@ import express from "express";
 import cors from "cors";
 import multer from "multer";
 import { ConvexHttpClient } from "convex/browser";
-import { api } from "../../convex/_generated/api.js";
+// Try to import from local copy first, fallback to relative path for development
+import { api } from "./lib/convex-generated/api.js";
 import * as dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";

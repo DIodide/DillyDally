@@ -4,8 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "sh -c '[ -n \"$VERCEL\" ] && npm install --include=optional @rollup/rollup-linux-x64-gnu || true' && tsc -b && vite build",
+    "copy-convex": "node scripts/copy-convex-generated.js",
+    "dev": "npm run copy-convex && vite",
+    "build": "sh -c '[ -n \"$VERCEL\" ] && npm install --include=optional @rollup/rollup-linux-x64-gnu || true' && npm run copy-convex && tsc -b && vite build",
     "check-types": "tsc --noEmit",
     "lint": "eslint .",
     "preview": "vite preview",
