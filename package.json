@@ -10,7 +10,8 @@
   ],
   "scripts": {
     "dev": "concurrently --names \"convex,frontend,backend\" --prefix-colors \"blue,green,yellow\" \"npx convex dev\" \"npm run dev --workspace=dillydally-frontend\" \"npm run dev --workspace=dillydally-express\"",
-    "build": "npm run codegen && turbo build",
+    "build": "npm run codegen && turbo build && npm run postbuild",
+    "postbuild": "test -d dillydally-frontend/dist && echo '✓ Build output found at dillydally-frontend/dist' || (echo '✗ Build output not found' && exit 1)",
     "codegen": "npx convex codegen",
     "start": "concurrently --names \"convex,frontend,backend\" --prefix-colors \"blue,green,yellow\" \"npx convex dev\" \"npm run preview --workspace=dillydally-frontend\" \"npm run start --workspace=dillydally-express\"",
     "install-all": "npm install && npm install --workspaces"
