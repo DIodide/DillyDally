@@ -10,7 +10,8 @@
   ],
   "scripts": {
     "dev": "concurrently --names \"convex,frontend,backend\" --prefix-colors \"blue,green,yellow\" \"npx convex dev\" \"npm run dev --workspace=dillydally-frontend\" \"npm run dev --workspace=dillydally-express\"",
-    "build": "npm run codegen && turbo build && npm run postbuild",
+    "build": "npm run codegen && npm run install-rollup && turbo build && npm run postbuild",
+    "install-rollup": "npm install --workspace=dillydally-frontend --include=optional @rollup/rollup-linux-x64-gnu || true",
     "postbuild": "if [ -d dillydally-frontend/dist ]; then rm -rf dist && cp -r dillydally-frontend/dist dist && echo '✓ Copied dist to root'; else echo '✗ Build output not found' && exit 1; fi",
     "codegen": "npx convex codegen",
     "start": "concurrently --names \"convex,frontend,backend\" --prefix-colors \"blue,green,yellow\" \"npx convex dev\" \"npm run preview --workspace=dillydally-frontend\" \"npm run start --workspace=dillydally-express\"",
