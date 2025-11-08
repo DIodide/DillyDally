@@ -25,32 +25,65 @@ export const FaceTracking: React.FC<FaceTrackingProps> = ({
   const [status, setStatus] = useState("—");
   const [confidence, setConfidence] = useState(0);
   const [showDebug, setShowDebug] = useState(false);
+  const initializingRef = useRef(false);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!isTracking) {
       setLoaded(false);
+      initializingRef.current = false;
+      // Cleanup detector when tracking stops
+      if (cleanupRef.current) {
+        cleanupRef.current();
+        cleanupRef.current = null;
+      }
     }
+    
+    // Cleanup on unmount
+    return () => {
+      if (cleanupRef.current) {
+        cleanupRef.current();
+        cleanupRef.current = null;
+      }
+    };
   }, [isTracking]);
 
   const handleVideoLoad = async () => {
     if (!isTracking) return;
+    if (loaded || initializingRef.current) return;
     
     const video = videoRef.current?.video;
     if (!video || !canvasRef.current) return;
-    if (video.readyState !== 4 || loaded) return;
+    
+    // Wait for video to have valid dimensions
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      console.log("Video dimensions not ready yet, waiting...");
+      return;
+    }
 
-    await runDetector(video, canvasRef.current, (result: AttentionState) => {
-      if (result) {
-        setStatus(result.state);
-        setConfidence(result.confidence ?? 0);
-        
-        // Notify parent component of attention changes
-        if (onAttentionChange) {
-          onAttentionChange(result);
+    console.log("Starting face detector with video dimensions:", video.videoWidth, video.videoHeight);
+    initializingRef.current = true;
+    
+    try {
+      const cleanup = await runDetector(video, canvasRef.current, (result: AttentionState) => {
+        if (result) {
+          setStatus(result.state);
+          setConfidence(result.confidence ?? 0);
+          
+          // Notify parent component of attention changes
+          if (onAttentionChange) {
+            onAttentionChange(result);
+          }
         }
-      }
-    });
-    setLoaded(true);
+      });
+      
+      // Store cleanup function
+      cleanupRef.current = cleanup;
+      setLoaded(true);
+    } catch (error) {
+      console.error("Error starting face detector:", error);
+      initializingRef.current = false;
+    }
   };
 
   const handleRecalibrate = () => {
@@ -128,7 +161,8 @@ export const FaceTracking: React.FC<FaceTrackingProps> = ({
             width={inputResolution.width}
             height={inputResolution.height}
             videoConstraints={videoConstraints}
-            onLoadedData={handleVideoLoad}
+            onLoadedMetadata={handleVideoLoad}
+            onCanPlay={handleVideoLoad}
             style={{ 
               visibility: "hidden", 
               position: "absolute",

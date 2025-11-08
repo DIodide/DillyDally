@@ -24,30 +24,40 @@ export const runDetector = async (
 
   const detector = await faceLandmarksDetection.createDetector(model, detectorConfig);
 
+  let isRunning = true;
+  
   const detect = async () => {
-    const estimationConfig = { flipHorizontal: true };
-    const faces = await detector.estimateFaces(video, estimationConfig);
-    const ctx = canvas.getContext("2d");
+    if (!isRunning) return;
     
-    if (!ctx) return;
+    try {
+      const estimationConfig = { flipHorizontal: true };
+      const faces = await detector.estimateFaces(video, estimationConfig);
+      const ctx = canvas.getContext("2d");
+      
+      if (!ctx) return;
 
-    // Choose the most prominent face if multiple
-    const face = faces && faces.length ? faces[0] : null;
+      // Choose the most prominent face if multiple
+      const face = faces && faces.length ? faces[0] : null;
 
-    // Classification first
-    const state = getAttentionState(face, canvas);
+      // Classification first
+      const state = getAttentionState(face, canvas);
 
-    // Then draw overlays (mesh + optional direction triangles)
-    drawMesh(face, ctx);
+      // Then draw overlays (mesh + optional direction triangles)
+      drawMesh(face, ctx);
 
-    if (cb) cb(state);
-
-    setTimeout(() => {
-      requestAnimationFrame(detect);
-    }, DRAW_DELAY);
+      if (cb) cb(state);
+    } catch (error) {
+      console.error("Detection error:", error);
+    }
   };
 
-  detect();
-  return null;
+  // Use setInterval instead of requestAnimationFrame to keep running even when tab is not in focus
+  const intervalId = setInterval(detect, DRAW_DELAY);
+  
+  // Return cleanup function
+  return () => {
+    isRunning = false;
+    clearInterval(intervalId);
+  };
 };
 
