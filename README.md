@@ -14,7 +14,7 @@ By adding intelligent reflection and personalized analytics to the Pomodoro meth
 - Screen Montioring with data collection and deeper analytics
 - AI-powered data analysis 
 
-[image.png](https://cdn.discordapp.com/attachments/1436914359342334002/1437034919359680642/image.png?ex=6911c68f&is=6910750f&hm=bc15ee2ea7b8c145aa2b789ee3408a800c540e0144449023297a741a03f1d380&)
+![image.png](https://cdn.discordapp.com/attachments/1436914359342334002/1437034919359680642/image.png?ex=6911c68f&is=6910750f&hm=bc15ee2ea7b8c145aa2b789ee3408a800c540e0144449023297a741a03f1d380&)
 
 ---
 
