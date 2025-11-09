@@ -8,7 +8,14 @@ import { drawMesh } from "./drawMesh";
 import { getAttentionState } from "./classify";
 import type { AttentionState } from "./classify";
 
-const DRAW_DELAY = 100; // ms (faster updates)
+const DRAW_DELAY_VISIBLE = 100; // ms when tab is visible (faster updates)
+const DRAW_DELAY_HIDDEN = 500; // ms when tab is hidden (slower but still works)
+
+// Helper to check if tab is visible
+const isTabVisible = (): boolean => {
+  if (typeof document === "undefined") return true;
+  return !document.hidden && document.visibilityState === "visible";
+};
 
 export const runDetector = async (
   video: HTMLVideoElement,
@@ -25,11 +32,11 @@ export const runDetector = async (
     console.error("❌ Failed to initialize TensorFlow backend:", error);
     throw new Error("TensorFlow backend initialization failed");
   }
-  
+
   const model = faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh;
-  const detectorConfig = { 
+  const detectorConfig = {
     runtime: "tfjs" as const,
-    refineLandmarks: false 
+    refineLandmarks: false,
   };
 
   let detector;
@@ -45,25 +52,31 @@ export const runDetector = async (
   let isRunning = true;
   let frameCount = 0;
   let lastLogTime = Date.now();
-  
+  let timeoutId: number | null = null;
+  let lastScheduleTime = performance.now();
+
   const detect = async () => {
     if (!isRunning) return;
-    
+
     // Validate video dimensions before processing
     if (!video || video.videoWidth === 0 || video.videoHeight === 0 || video.readyState < 2) {
       // Video not ready or has been stopped, skip this frame silently
+      scheduleNext();
       return;
     }
-    
+
     try {
       const estimationConfig = { flipHorizontal: true };
       const faces = await detector.estimateFaces(video, estimationConfig);
       const ctx = canvas.getContext("2d");
-      
-      if (!ctx) return;
+
+      if (!ctx) {
+        scheduleNext();
+        return;
+      }
 
       frameCount++;
-      
+
       // Log status every 5 seconds
       if (Date.now() - lastLogTime > 5000) {
         console.log(`📊 Face detection running: ${frameCount} frames processed, ${faces?.length || 0} faces detected`);
@@ -88,15 +101,58 @@ export const runDetector = async (
         console.error("Detection error:", error);
       }
     }
+
+    scheduleNext();
   };
 
-  // Use setInterval instead of requestAnimationFrame to keep running even when tab is not in focus
-  const intervalId = setInterval(detect, DRAW_DELAY);
-  
+  const scheduleNext = () => {
+    if (!isRunning) return;
+
+    // Use dynamic delay based on visibility
+    const baseDelay = isTabVisible() ? DRAW_DELAY_VISIBLE : DRAW_DELAY_HIDDEN;
+
+    // Calculate drift compensation
+    const now = performance.now();
+    const actualDelay = now - lastScheduleTime;
+    const drift = actualDelay - baseDelay;
+
+    // Compensate for drift by adjusting next delay
+    // This helps maintain accurate timing even when throttled
+    const adjustedDelay = Math.max(10, baseDelay - drift);
+
+    lastScheduleTime = now;
+
+    // Use setTimeout with drift compensation
+    // This is more reliable than setInterval when tab is hidden
+    timeoutId = window.setTimeout(() => {
+      detect();
+    }, adjustedDelay);
+  };
+
+  // Start the detection loop
+  scheduleNext();
+
+  // Listen for visibility changes to adjust timing
+  const handleVisibilityChange = () => {
+    // When visibility changes, reschedule with appropriate delay
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+    if (isRunning) {
+      scheduleNext();
+    }
+  };
+
+  document.addEventListener("visibilitychange", handleVisibilityChange);
+
   // Return cleanup function
   return () => {
     isRunning = false;
-    clearInterval(intervalId);
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
   };
 };
-

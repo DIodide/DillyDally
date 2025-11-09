@@ -27,23 +27,75 @@ export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const startTimeRef = useRef<number | null>(null);
+  const initialDurationRef = useRef<number>(customDurations.focus);
+  const animationFrameRef = useRef<number | null>(null);
 
+  // Sync initialDurationRef when timeLeft changes externally (e.g., mode change, reset)
   useEffect(() => {
-    let interval: number | null = null;
+    if (!isActive && startTimeRef.current === null) {
+      initialDurationRef.current = timeLeft;
+    }
+  }, [timeLeft, isActive]);
 
+  // Use timestamp-based timing to avoid throttling issues
+  useEffect(() => {
     if (isActive && timeLeft > 0) {
-      interval = window.setInterval(() => {
-        setTimeLeft((time) => time - 1);
-      }, 1000);
+      // Store start time and initial duration when timer starts
+      if (startTimeRef.current === null) {
+        startTimeRef.current = Date.now();
+        initialDurationRef.current = timeLeft;
+      }
+
+      const updateTimer = () => {
+        if (startTimeRef.current === null || !isActive) return;
+
+        const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+        const remaining = Math.max(0, initialDurationRef.current - elapsed);
+
+        setTimeLeft(remaining);
+
+        if (remaining > 0 && isActive) {
+          // Use requestAnimationFrame for smooth updates when visible
+          // Fall back to setTimeout when hidden (less throttled than setInterval)
+          if (document.hidden) {
+            animationFrameRef.current = window.setTimeout(updateTimer, 100) as unknown as number;
+          } else {
+            animationFrameRef.current = requestAnimationFrame(updateTimer);
+          }
+        } else if (remaining === 0) {
+          // Timer finished
+          startTimeRef.current = null;
+          onStop();
+        }
+      };
+
+      // Start the update loop
+      if (document.hidden) {
+        animationFrameRef.current = window.setTimeout(updateTimer, 100) as unknown as number;
+      } else {
+        animationFrameRef.current = requestAnimationFrame(updateTimer);
+      }
+
+      return () => {
+        if (animationFrameRef.current !== null) {
+          if (document.hidden) {
+            clearTimeout(animationFrameRef.current);
+          } else {
+            cancelAnimationFrame(animationFrameRef.current);
+          }
+          animationFrameRef.current = null;
+        }
+      };
     } else if (isActive && timeLeft === 0) {
       // Timer finished naturally
+      startTimeRef.current = null;
       onStop();
+    } else if (!isActive) {
+      // Timer stopped or reset
+      startTimeRef.current = null;
     }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isActive, timeLeft, onStop]);
+  }, [isActive, onStop]);
 
   // Focus input when entering edit mode
   useEffect(() => {
@@ -57,6 +109,7 @@ export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps
     setMode(newMode);
     setTimeLeft(customDurations[newMode]);
     setIsEditing(false);
+    startTimeRef.current = null;
     if (isActive) {
       onStop();
     }
@@ -64,6 +117,8 @@ export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps
 
   const handleReset = () => {
     setTimeLeft(customDurations[mode]);
+    startTimeRef.current = null;
+    initialDurationRef.current = customDurations[mode];
     onReset();
   };
 
@@ -107,6 +162,8 @@ export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps
       const newDurations = { ...customDurations, [mode]: parsedSeconds };
       setCustomDurations(newDurations);
       setTimeLeft(parsedSeconds);
+      startTimeRef.current = null;
+      initialDurationRef.current = parsedSeconds;
       setIsEditing(false);
     } else {
       // Invalid input, revert to current time
