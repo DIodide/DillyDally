@@ -19,6 +19,7 @@ interface TimelineRegion {
     timestamp: number;
     summary: string;
     isProductive: boolean;
+    imageBase64?: string;
   }>;
 }
 
@@ -34,19 +35,19 @@ interface AttentionTimelineRegion {
 }
 
 export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybackProps) {
-  const snapshots = useQuery(
-    api.functions.getSessionSnapshots,
-    sessionId ? { sessionId } : "skip"
-  );
-  const cameraSnapshots = useQuery(
-    api.functions.getSessionCameraSnapshots,
-    sessionId ? { sessionId } : "skip"
-  );
+  const snapshots = useQuery(api.functions.getSessionSnapshots, sessionId ? { sessionId } : "skip");
+  const cameraSnapshots = useQuery(api.functions.getSessionCameraSnapshots, sessionId ? { sessionId } : "skip");
   const [expandedActivities, setExpandedActivities] = useState<Set<number>>(new Set());
   const [clickedRegion, setClickedRegion] = useState<{
     index: number;
     position: { x: number; y: number };
     label: string;
+  } | null>(null);
+  const [selectedScreenshot, setSelectedScreenshot] = useState<{
+    imageBase64: string;
+    timestamp: number;
+    summary: string;
+    activity?: string;
   } | null>(null);
 
   // Handle clicking outside to dismiss popup
@@ -114,6 +115,7 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
               timestamp: snapshot.timestamp,
               summary: snapshot.summary,
               isProductive: snapshot.isProductive,
+              imageBase64: snapshot.imageBase64,
             },
           ],
         };
@@ -123,6 +125,7 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
           timestamp: snapshot.timestamp,
           summary: snapshot.summary,
           isProductive: snapshot.isProductive,
+          imageBase64: snapshot.imageBase64,
         });
         // Update productivity status (use majority or most recent)
         if (snapshot.isProductive) {
@@ -144,6 +147,8 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
   };
 
   const timelineRegions = processSnapshots();
+  // Sort regions by startTime descending (most recent first) for Activity Details display
+  const sortedActivityRegions = [...timelineRegions].sort((a, b) => b.startTime - a.startTime);
 
   // Normalize attention state - group all "away" directions into one state
   const normalizeAttentionState = (state: string): string => {
@@ -170,7 +175,7 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
       const normalizedState = normalizeAttentionState(snapshot.attentionState);
       // Floor to nearest 2-second interval
       const intervalStart = Math.floor(snapshot.timestamp / 2000) * 2000;
-      
+
       if (!intervalMap.has(intervalStart)) {
         intervalMap.set(intervalStart, []);
       }
@@ -181,8 +186,13 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
     }
 
     // Determine majority state for each interval
-    const intervals: Array<{ startTime: number; endTime: number; state: string; snapshots: Array<{ timestamp: number; attentionState: string }> }> = [];
-    
+    const intervals: Array<{
+      startTime: number;
+      endTime: number;
+      state: string;
+      snapshots: Array<{ timestamp: number; attentionState: string }>;
+    }> = [];
+
     for (const [intervalStart, snapshots] of intervalMap.entries()) {
       // Count occurrences of each state in this interval
       const stateCounts = new Map<string, number>();
@@ -219,8 +229,8 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
       if (!currentRegion || currentRegion.attentionState !== interval.state) {
         // Start a new region
         if (currentRegion) {
-          // Close previous region - use the last interval's end time
-          currentRegion.endTime = currentRegion.endTime;
+          // Close previous region - use the interval's end time
+          currentRegion.endTime = interval.endTime;
           currentRegion.duration = currentRegion.endTime - currentRegion.startTime;
           regions.push(currentRegion);
         }
@@ -244,7 +254,7 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
     if (currentRegion) {
       // Use actual snapshot timestamps for more accurate end time
       if (currentRegion.snapshots.length > 0) {
-        const maxTimestamp = Math.max(...currentRegion.snapshots.map(s => s.timestamp));
+        const maxTimestamp = Math.max(...currentRegion.snapshots.map((s) => s.timestamp));
         currentRegion.endTime = Math.max(currentRegion.endTime, maxTimestamp);
       }
       currentRegion.duration = currentRegion.endTime - currentRegion.startTime;
@@ -292,9 +302,7 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
   };
 
   // Calculate productivity stats
-  const productiveTime = timelineRegions
-    .filter((r) => r.isProductive)
-    .reduce((sum, r) => sum + r.duration, 0);
+  const productiveTime = timelineRegions.filter((r) => r.isProductive).reduce((sum, r) => sum + r.duration, 0);
   const productivityPercentage = sessionDuration > 0 ? (productiveTime / sessionDuration) * 100 : 0;
 
   // Calculate attention/focus stats
@@ -319,6 +327,41 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
         </div>
       ) : (
         <>
+          {/* Screenshot Display */}
+          {selectedScreenshot && (
+            <div className="session-playback-screenshot-container">
+              <div className="session-playback-screenshot-header">
+                <h3>Screenshot Preview</h3>
+                <button
+                  className="session-playback-screenshot-close"
+                  onClick={() => setSelectedScreenshot(null)}
+                  aria-label="Close screenshot">
+                  ✕
+                </button>
+              </div>
+              <div className="session-playback-screenshot-content">
+                <img
+                  src={`data:image/jpeg;base64,${selectedScreenshot.imageBase64}`}
+                  alt="Screenshot"
+                  className="session-playback-screenshot-image"
+                />
+                <div className="session-playback-screenshot-info">
+                  {selectedScreenshot.activity && (
+                    <div className="screenshot-info-item">
+                      <strong>Activity:</strong> {selectedScreenshot.activity}
+                    </div>
+                  )}
+                  <div className="screenshot-info-item">
+                    <strong>Time:</strong> {formatTime(selectedScreenshot.timestamp)}
+                  </div>
+                  <div className="screenshot-info-item">
+                    <strong>Summary:</strong> {selectedScreenshot.summary}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Summary Stats */}
           <div className="session-playback-stats">
             <div className="playback-stat">
@@ -358,9 +401,20 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
               {timelineRegions.map((region, index) => {
                 const percentage = calculatePercentage(region.duration);
                 const leftPercentage =
-                  sessionDuration > 0
-                    ? ((region.startTime - sessionStartTime) / sessionDuration) * 100
-                    : 0;
+                  sessionDuration > 0 ? ((region.startTime - sessionStartTime) / sessionDuration) * 100 : 0;
+
+                const handleTimelineClick = () => {
+                  // Find the first snapshot with an image for this region
+                  const snapshotWithImage = region.snapshots.find((s) => s.imageBase64);
+                  if (snapshotWithImage) {
+                    setSelectedScreenshot({
+                      imageBase64: snapshotWithImage.imageBase64!,
+                      timestamp: snapshotWithImage.timestamp,
+                      summary: snapshotWithImage.summary,
+                      activity: region.activity,
+                    });
+                  }
+                };
 
                 return (
                   <div
@@ -369,7 +423,9 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
                     style={{
                       width: `${percentage}%`,
                       left: `${leftPercentage}%`,
-                    }}>
+                      cursor: region.snapshots.some((s) => s.imageBase64) ? "pointer" : "default",
+                    }}
+                    onClick={region.snapshots.some((s) => s.imageBase64) ? handleTimelineClick : undefined}>
                     <div className="timeline-region-content">
                       <div className="timeline-region-label">{region.activity}</div>
                       <div className="timeline-region-duration">{formatDuration(region.duration)}</div>
@@ -399,9 +455,7 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
                 {attentionTimelineRegions.map((region, index) => {
                   const percentage = calculatePercentage(region.duration);
                   const leftPercentage =
-                    sessionDuration > 0
-                      ? ((region.startTime - sessionStartTime) / sessionDuration) * 100
-                      : 0;
+                    sessionDuration > 0 ? ((region.startTime - sessionStartTime) / sessionDuration) * 100 : 0;
 
                   const getAttentionLabel = (state: string): string => {
                     switch (state) {
@@ -449,7 +503,13 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
                       <div className="timeline-region-content">
                         {isFocused && (
                           <div className="timeline-region-icon" title="Focused">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2">
                               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                               <circle cx="12" cy="12" r="3" />
                             </svg>
@@ -457,7 +517,13 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
                         )}
                         {isAway && (
                           <div className="timeline-region-icon" title="Looking Away">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2">
                               <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
                               <line x1="1" y1="1" x2="23" y2="23" />
                             </svg>
@@ -504,50 +570,70 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
           <div className="session-playback-activities">
             <h3 className="activities-title">Activity Details</h3>
             <div className="activities-list">
-              {timelineRegions.map((region, index) => (
-                <div key={index} className={`activity-item ${region.isProductive ? "productive" : "not-productive"}`}>
-                  <div className="activity-header">
-                    <div className="activity-name">{region.activity}</div>
-                    <div className={`activity-status ${region.isProductive ? "productive" : "not-productive"}`}>
-                      {region.isProductive ? "✓ Productive" : "✗ Not Productive"}
+              {sortedActivityRegions.map((region) => {
+                // Find the original index in timelineRegions for expansion tracking
+                const originalIndex = timelineRegions.findIndex((r) => r === region);
+
+                const handleActivityClick = () => {
+                  // Find the first snapshot with an image for this activity
+                  const snapshotWithImage = region.snapshots.find((s) => s.imageBase64);
+                  if (snapshotWithImage) {
+                    setSelectedScreenshot({
+                      imageBase64: snapshotWithImage.imageBase64!,
+                      timestamp: snapshotWithImage.timestamp,
+                      summary: snapshotWithImage.summary,
+                      activity: region.activity,
+                    });
+                  }
+                };
+
+                return (
+                  <div
+                    key={originalIndex}
+                    className={`activity-item ${region.isProductive ? "productive" : "not-productive"}`}
+                    onClick={region.snapshots.some((s) => s.imageBase64) ? handleActivityClick : undefined}
+                    style={{ cursor: region.snapshots.some((s) => s.imageBase64) ? "pointer" : "default" }}>
+                    <div className="activity-header">
+                      <div className="activity-name">{region.activity}</div>
+                      <div className={`activity-status ${region.isProductive ? "productive" : "not-productive"}`}>
+                        {region.isProductive ? "✓ Productive" : "✗ Not Productive"}
+                      </div>
                     </div>
-                  </div>
-                  <div className="activity-meta">
-                    <span className="activity-time">
-                      {formatTime(region.startTime)} - {formatTime(region.endTime)}
-                    </span>
-                    <span className="activity-duration">{formatDuration(region.duration)}</span>
-                  </div>
-                  <div className="activity-snapshots-wrapper">
-                    <div className={`activity-snapshots ${expandedActivities.has(index) ? "expanded" : ""}`}>
-                      {(expandedActivities.has(index) ? region.snapshots : region.snapshots.slice(0, 3)).map(
-                        (snapshot, snapIndex) => (
-                          <div key={snapIndex} className="snapshot-preview">
-                            <div className="snapshot-time">{formatTime(snapshot.timestamp)}</div>
-                            <div className="snapshot-summary">{snapshot.summary}</div>
-                          </div>
-                        )
+                    <div className="activity-meta">
+                      <span className="activity-time">
+                        {formatTime(region.startTime)} - {formatTime(region.endTime)}
+                      </span>
+                      <span className="activity-duration">{formatDuration(region.duration)}</span>
+                    </div>
+                    <div className="activity-snapshots-wrapper">
+                      <div className={`activity-snapshots ${expandedActivities.has(originalIndex) ? "expanded" : ""}`}>
+                        {(expandedActivities.has(originalIndex) ? region.snapshots : region.snapshots.slice(0, 3)).map(
+                          (snapshot, snapIndex) => (
+                            <div key={snapIndex} className="snapshot-preview">
+                              <div className="snapshot-time">{formatTime(snapshot.timestamp)}</div>
+                              <div className="snapshot-summary">{snapshot.summary}</div>
+                            </div>
+                          )
+                        )}
+                      </div>
+                      {region.snapshots.length > 3 && (
+                        <button
+                          className="snapshot-more"
+                          onClick={() => toggleActivityExpansion(originalIndex)}
+                          type="button">
+                          {expandedActivities.has(originalIndex)
+                            ? `Show less`
+                            : `+${region.snapshots.length - 3} more snapshots`}
+                        </button>
                       )}
                     </div>
-                    {region.snapshots.length > 3 && (
-                      <button
-                        className="snapshot-more"
-                        onClick={() => toggleActivityExpansion(index)}
-                        type="button">
-                        {expandedActivities.has(index)
-                          ? `Show less`
-                          : `+${region.snapshots.length - 3} more snapshots`}
-                      </button>
-                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
-
         </>
       )}
     </div>
   );
 }
-

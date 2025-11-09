@@ -34,6 +34,7 @@ export const createSnapshot = mutation({
     summary: v.string(),
     activity: v.string(),
     currentTab: v.string(),
+    imageBase64: v.optional(v.string()), // Base64 encoded screenshot image
   },
   handler: async (ctx, args) => {
     await ctx.db.insert("snapshots", {
@@ -44,6 +45,7 @@ export const createSnapshot = mutation({
       summary: args.summary,
       activity: args.activity,
       currentTab: args.currentTab,
+      imageBase64: args.imageBase64,
     });
   },
 });

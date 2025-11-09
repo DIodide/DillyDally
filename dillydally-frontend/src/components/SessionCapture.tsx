@@ -131,25 +131,32 @@ export default function SessionCapture({
     try {
       console.log("📸 SessionCapture: startCapture() called");
       setError(null);
-      setCaptureCount(0);
+      
+      // Only reset capture count if starting fresh (no existing stream)
+      if (!streamRef.current) {
+        setCaptureCount(0);
+      }
 
       // Ensure we have a session ID before starting capture
       if (!sessionId) {
         throw new Error("Session ID is required to start capture");
       }
 
-      // Request screen capture
-      console.log("📸 SessionCapture: Requesting screen share permission...");
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-      });
-      console.log("📸 SessionCapture: Screen share permission granted");
+      // Only request screen capture if we don't already have a stream
+      if (!streamRef.current) {
+        console.log("📸 SessionCapture: Requesting screen share permission...");
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+          video: true,
+        });
+        console.log("📸 SessionCapture: Screen share permission granted");
+        streamRef.current = stream;
+      } else {
+        console.log("📸 SessionCapture: Resuming with existing stream");
+      }
 
-      streamRef.current = stream;
-
-      // Attach stream to video element
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+      // Attach stream to video element (use existing stream if resuming)
+      if (videoRef.current && streamRef.current) {
+        videoRef.current.srcObject = streamRef.current;
         await videoRef.current.play();
       }
 
@@ -296,21 +303,14 @@ export default function SessionCapture({
       isRecordingRef.current = false;
       setIsRecording(false);
 
-      // Notify parent that session failed to start
-      if (onSessionChange) {
-        onSessionChange(false);
-      }
+      // Don't notify parent here - parent manages session state separately
     }
   };
 
-  const stopCapture = () => {
+  const pauseCapture = () => {
+    // Pause capture but keep stream alive
     isRecordingRef.current = false;
     setIsRecording(false);
-
-    // Notify parent that session has stopped
-    if (onSessionChange) {
-      onSessionChange(false);
-    }
 
     // Cancel frame callback
     if (
@@ -346,7 +346,15 @@ export default function SessionCapture({
       abortControllerRef.current = null;
     }
 
-    // Stop media stream tracks
+    // Don't stop the stream - keep it alive for resume
+    uploadInProgressRef.current = false;
+  };
+
+  const stopCapture = () => {
+    // Stop capture and clean up everything including stream
+    pauseCapture(); // First pause to stop capture loop
+
+    // Now stop the stream completely
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
@@ -356,8 +364,6 @@ export default function SessionCapture({
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
-
-    uploadInProgressRef.current = false;
   };
 
   // Control recording state based on isActive prop
@@ -368,17 +374,31 @@ export default function SessionCapture({
       "isRecording:",
       isRecording,
       "sessionId:",
-      sessionId
+      sessionId,
+      "hasStream:",
+      !!streamRef.current
     );
     if (isActive && !isRecording && sessionId) {
-      console.log("📸 SessionCapture: Starting capture...");
+      console.log("📸 SessionCapture: Starting/resuming capture...");
       startCapture();
     } else if (!isActive && isRecording) {
-      console.log("📸 SessionCapture: Stopping capture...");
-      stopCapture();
+      console.log("📸 SessionCapture: Pausing capture (keeping stream alive)...");
+      pauseCapture();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive, isRecording, sessionId]);
+
+  // Clean up stream when sessionId changes (session ended) or component unmounts
+  useEffect(() => {
+    return () => {
+      // Only stop stream if sessionId is null (session ended)
+      if (!sessionId && streamRef.current) {
+        console.log("📸 SessionCapture: Session ended, cleaning up stream...");
+        stopCapture();
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
 
   // Cleanup on unmount
   useEffect(() => {

@@ -25,6 +25,7 @@ function SignOut() {
 
 function App() {
   const [isSessionActive, setIsSessionActive] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [breaks] = useState(0);
   const [distractionAlerts, setDistractionAlerts] = useState(0);
   const [currentAttentionState, setCurrentAttentionState] = useState<AttentionState | null>(null);
@@ -62,8 +63,8 @@ function App() {
       lastLogTimeRef.current = now;
       lastStateRef.current = state.state;
 
-      // Save camera snapshot to database if session is active and user is authenticated
-      if (isSessionActive && user && sessionId) {
+      // Save camera snapshot to database if session is active, not paused, and user is authenticated
+      if (isSessionActive && !isPaused && user && sessionId) {
         try {
           await createCameraSnapshot({
             userId: user._id,
@@ -86,6 +87,7 @@ function App() {
 
   const handleStart = async () => {
     console.log("⏱️ Timer: Start button clicked, activating session");
+    setIsPaused(false);
     if (user) {
       try {
         const newSessionId = await startSession();
@@ -99,8 +101,19 @@ function App() {
     }
   };
 
+  const handlePause = useCallback(() => {
+    console.log("⏸️ Timer: Pause button clicked");
+    setIsPaused(true);
+  }, []);
+
+  const handleResume = useCallback(() => {
+    console.log("▶️ Timer: Resume button clicked");
+    setIsPaused(false);
+  }, []);
+
   const handleStop = useCallback(() => {
     console.log("⏱️ Timer: Stop button clicked, deactivating session");
+    setIsPaused(false);
     setIsSessionActive(false);
     // Show playback if we have a session ID
     setSessionId((currentSessionId) => {
@@ -193,7 +206,15 @@ function App() {
               <div className="main-layout">
                 {/* Left Column: Timer */}
                 <div className="left-column">
-                  <Timer isActive={isSessionActive} onStart={handleStart} onStop={handleStop} onReset={handleReset} />
+                  <Timer
+                    isActive={isSessionActive}
+                    isPaused={isPaused}
+                    onStart={handleStart}
+                    onStop={handleStop}
+                    onPause={handlePause}
+                    onResume={handleResume}
+                    onReset={handleReset}
+                  />
                   {/* Compact Stats Row */}
                   <div className="compact-stats-row">
                     <StatsCard icon="☕" title="Breaks" value={breaks.toString()} iconBgColor="#d4f1f4" compact />
@@ -222,11 +243,15 @@ function App() {
 
         {/* Hidden Session Capture Component - controls screenshot capture */}
         <div style={{ display: "none" }}>
-          <SessionCapture isActive={isSessionActive} sessionId={sessionId} onSessionChange={setIsSessionActive} />
+          <SessionCapture
+            isActive={isSessionActive && !isPaused}
+            sessionId={sessionId}
+            onSessionChange={setIsSessionActive}
+          />
         </div>
 
-        {/* Face Tracking Component - hidden but active when session is running */}
-        <FaceTracking isTracking={isSessionActive} onAttentionChange={handleAttentionChange} />
+        {/* Face Tracking Component - hidden but active when session is running and not paused */}
+        <FaceTracking isTracking={isSessionActive && !isPaused} onAttentionChange={handleAttentionChange} />
       </Authenticated>
       <Unauthenticated>
         <AuthForm />

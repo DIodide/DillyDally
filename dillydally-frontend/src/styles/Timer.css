@@ -123,6 +123,54 @@
 
 .start-btn {
   min-width: 100px;
+  background-color: #17a2b8;
+  color: white;
+  border-color: #17a2b8;
+}
+
+.start-btn:hover {
+  background-color: #138496;
+  border-color: #138496;
+  color: white;
+}
+
+.pause-btn {
+  min-width: 100px;
+  background-color: #ffc107;
+  color: #1e3a5f;
+  border-color: #ffc107;
+}
+
+.pause-btn:hover {
+  background-color: #e0a800;
+  border-color: #e0a800;
+  color: #1e3a5f;
+}
+
+.resume-btn {
+  min-width: 100px;
+  background-color: #28a745;
+  color: white;
+  border-color: #28a745;
+}
+
+.resume-btn:hover {
+  background-color: #218838;
+  border-color: #218838;
+  color: white;
+}
+
+.stop-btn {
+  min-width: 100px;
+  background-color: #dc3545;
+  color: white;
+  border-color: #dc3545;
+}
+
+.stop-btn:hover {
+  background-color: #c82333;
+  border-color: #c82333;
+  color: white;
 }
 
 .reset-btn {

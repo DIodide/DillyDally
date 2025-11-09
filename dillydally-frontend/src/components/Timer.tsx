@@ -3,8 +3,11 @@ import "../styles/Timer.css";
 
 interface TimerProps {
   isActive: boolean;
+  isPaused?: boolean;
   onStart: () => void;
   onStop: () => void;
+  onPause: () => void;
+  onResume: () => void;
   onReset: () => void;
 }
 
@@ -16,7 +19,14 @@ const TIMER_DURATIONS = {
   longBreak: 15 * 60, // 15 minutes
 };
 
-export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps) {
+// Helper function to format seconds as MM:SS
+const formatTime = (seconds: number) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+};
+
+export default function Timer({ isActive, isPaused = false, onStart, onStop, onPause, onResume, onReset }: TimerProps) {
   const [mode, setMode] = useState<TimerMode>("focus");
   const [customDurations, setCustomDurations] = useState<Record<TimerMode, number>>({
     focus: TIMER_DURATIONS.focus,
@@ -30,6 +40,8 @@ export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps
   const startTimeRef = useRef<number | null>(null);
   const initialDurationRef = useRef<number>(customDurations.focus);
   const animationFrameRef = useRef<number | null>(null);
+  const pausedTimeRef = useRef<number>(0); // Total time paused in milliseconds
+  const pauseStartTimeRef = useRef<number | null>(null); // When pause started
 
   // Sync initialDurationRef when timeLeft changes externally (e.g., mode change, reset)
   useEffect(() => {
@@ -38,24 +50,44 @@ export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps
     }
   }, [timeLeft, isActive]);
 
+  // Handle pause/resume
+  useEffect(() => {
+    if (isPaused && isActive && pauseStartTimeRef.current === null) {
+      // Pause started - record when pause began
+      pauseStartTimeRef.current = Date.now();
+    } else if (!isPaused && isActive && pauseStartTimeRef.current !== null) {
+      // Resume - add paused duration to total paused time
+      const pauseDuration = Date.now() - pauseStartTimeRef.current;
+      pausedTimeRef.current += pauseDuration;
+      pauseStartTimeRef.current = null;
+    } else if (!isActive) {
+      // Timer stopped - reset pause tracking
+      pausedTimeRef.current = 0;
+      pauseStartTimeRef.current = null;
+    }
+  }, [isPaused, isActive]);
+
   // Use timestamp-based timing to avoid throttling issues
   useEffect(() => {
-    if (isActive && timeLeft > 0) {
+    if (isActive && !isPaused && timeLeft > 0) {
       // Store start time and initial duration when timer starts
       if (startTimeRef.current === null) {
         startTimeRef.current = Date.now();
         initialDurationRef.current = timeLeft;
+        pausedTimeRef.current = 0; // Reset paused time when starting fresh
       }
 
       const updateTimer = () => {
-        if (startTimeRef.current === null || !isActive) return;
+        if (startTimeRef.current === null || !isActive || isPaused) return;
 
-        const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+        // Calculate elapsed time minus paused time
+        const now = Date.now();
+        const elapsed = Math.floor((now - startTimeRef.current - pausedTimeRef.current) / 1000);
         const remaining = Math.max(0, initialDurationRef.current - elapsed);
 
         setTimeLeft(remaining);
 
-        if (remaining > 0 && isActive) {
+        if (remaining > 0 && isActive && !isPaused) {
           // Use requestAnimationFrame for smooth updates when visible
           // Fall back to setTimeout when hidden (less throttled than setInterval)
           if (document.hidden) {
@@ -66,6 +98,8 @@ export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps
         } else if (remaining === 0) {
           // Timer finished
           startTimeRef.current = null;
+          pausedTimeRef.current = 0;
+          pauseStartTimeRef.current = null;
           onStop();
         }
       };
@@ -90,12 +124,35 @@ export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps
     } else if (isActive && timeLeft === 0) {
       // Timer finished naturally
       startTimeRef.current = null;
+      pausedTimeRef.current = 0;
+      pauseStartTimeRef.current = null;
       onStop();
     } else if (!isActive) {
       // Timer stopped or reset
       startTimeRef.current = null;
+      pausedTimeRef.current = 0;
+      pauseStartTimeRef.current = null;
     }
-  }, [isActive, onStop]);
+  }, [isActive, isPaused, onStop]);
+
+  // Update document title with timer when active (but not paused)
+  useEffect(() => {
+    if (isActive && !isPaused && timeLeft > 0) {
+      const formattedTime = formatTime(timeLeft);
+      document.title = `${formattedTime} - DillyDally`;
+    } else if (isActive && isPaused) {
+      document.title = "⏸️ Paused - DillyDally";
+    } else {
+      document.title = "DillyDally";
+    }
+
+    // Cleanup: reset title when component unmounts
+    return () => {
+      if (!isActive) {
+        document.title = "DillyDally";
+      }
+    };
+  }, [isActive, isPaused, timeLeft]);
 
   // Focus input when entering edit mode
   useEffect(() => {
@@ -110,6 +167,8 @@ export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps
     setTimeLeft(customDurations[newMode]);
     setIsEditing(false);
     startTimeRef.current = null;
+    pausedTimeRef.current = 0;
+    pauseStartTimeRef.current = null;
     if (isActive) {
       onStop();
     }
@@ -119,6 +178,8 @@ export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps
     setTimeLeft(customDurations[mode]);
     startTimeRef.current = null;
     initialDurationRef.current = customDurations[mode];
+    pausedTimeRef.current = 0;
+    pauseStartTimeRef.current = null;
     onReset();
   };
 
@@ -164,6 +225,8 @@ export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps
       setTimeLeft(parsedSeconds);
       startTimeRef.current = null;
       initialDurationRef.current = parsedSeconds;
+      pausedTimeRef.current = 0;
+      pauseStartTimeRef.current = null;
       setIsEditing(false);
     } else {
       // Invalid input, revert to current time
@@ -183,12 +246,6 @@ export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps
     } else if (e.key === "Escape") {
       handleTimeCancel();
     }
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
   const currentDuration = customDurations[mode];
@@ -256,12 +313,29 @@ export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps
       </div>
 
       <div className="timer-controls">
-        <button className="timer-control-btn start-btn" onClick={isActive ? onStop : onStart}>
-          {isActive ? "Stop" : "Start"}
-        </button>
-        <button className="timer-control-btn reset-btn" onClick={handleReset}>
-          Reset
-        </button>
+        {!isActive ? (
+          <button className="timer-control-btn start-btn" onClick={onStart}>
+            Start
+          </button>
+        ) : isPaused ? (
+          <>
+            <button className="timer-control-btn resume-btn" onClick={onResume}>
+              Resume
+            </button>
+            <button className="timer-control-btn stop-btn" onClick={onStop}>
+              Stop
+            </button>
+          </>
+        ) : (
+          <>
+            <button className="timer-control-btn pause-btn" onClick={onPause}>
+              Pause
+            </button>
+            <button className="timer-control-btn stop-btn" onClick={onStop}>
+              Stop
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
