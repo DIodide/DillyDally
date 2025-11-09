@@ -4,10 +4,11 @@ interface SessionCaptureProps {
   intervalMs?: number;
   quality?: number;
   maxWidth?: number;
+  isActive?: boolean;
   onSessionChange?: (isActive: boolean) => void;
 }
 
-export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWidth = 1280, onSessionChange }: SessionCaptureProps) {
+export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWidth = 1280, isActive = false, onSessionChange }: SessionCaptureProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [captureCount, setCaptureCount] = useState(0);
@@ -83,7 +84,11 @@ export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWi
             throw new Error(`Upload failed: ${response.statusText}`);
           }
 
-          setCaptureCount((prev) => prev + 1);
+          setCaptureCount((prev) => {
+            const newCount = prev + 1;
+            console.log(`📸 SessionCapture: Screenshot ${newCount} uploaded successfully`);
+            return newCount;
+          });
         } catch (err: any) {
           if (err.name !== "AbortError") {
             console.error("Upload error:", err);
@@ -101,13 +106,16 @@ export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWi
 
   const startCapture = async () => {
     try {
+      console.log('📸 SessionCapture: startCapture() called');
       setError(null);
       setCaptureCount(0);
 
       // Request screen capture
+      console.log('📸 SessionCapture: Requesting screen share permission...');
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: true,
       });
+      console.log('📸 SessionCapture: Screen share permission granted');
 
       streamRef.current = stream;
 
@@ -120,6 +128,7 @@ export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWi
       // Set up frame callback
       isRecordingRef.current = true;
       setIsRecording(true);
+      console.log('📸 SessionCapture: Recording started successfully');
       
       // Notify parent that session has started
       if (onSessionChange) {
@@ -158,10 +167,15 @@ export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWi
         ); // Check at least every 100ms
       }
     } catch (err: any) {
-      console.error("Failed to start capture:", err);
+      console.error("📸 SessionCapture: Failed to start capture:", err);
       setError(`Failed to start capture: ${err.message}`);
       isRecordingRef.current = false;
       setIsRecording(false);
+      
+      // Notify parent that session failed to start
+      if (onSessionChange) {
+        onSessionChange(false);
+      }
     }
   };
 
@@ -210,13 +224,27 @@ export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWi
     uploadInProgressRef.current = false;
   };
 
+  // Control recording state based on isActive prop
+  useEffect(() => {
+    console.log('📸 SessionCapture: isActive changed to', isActive, 'isRecording:', isRecording);
+    if (isActive && !isRecording) {
+      console.log('📸 SessionCapture: Starting capture...');
+      startCapture();
+    } else if (!isActive && isRecording) {
+      console.log('📸 SessionCapture: Stopping capture...');
+      stopCapture();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive, isRecording]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (isRecording) {
+      if (isRecordingRef.current) {
         stopCapture();
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

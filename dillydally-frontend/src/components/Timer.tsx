@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "../styles/Timer.css";
 
 interface TimerProps {
@@ -18,7 +18,15 @@ const TIMER_DURATIONS = {
 
 export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps) {
   const [mode, setMode] = useState<TimerMode>("focus");
-  const [timeLeft, setTimeLeft] = useState(TIMER_DURATIONS.focus);
+  const [customDurations, setCustomDurations] = useState<Record<TimerMode, number>>({
+    focus: TIMER_DURATIONS.focus,
+    shortBreak: TIMER_DURATIONS.shortBreak,
+    longBreak: TIMER_DURATIONS.longBreak,
+  });
+  const [timeLeft, setTimeLeft] = useState(customDurations.focus);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let interval: number | null = null;
@@ -37,17 +45,87 @@ export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps
     };
   }, [isActive, timeLeft, onStop]);
 
+  // Focus input when entering edit mode
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
   const handleModeChange = (newMode: TimerMode) => {
     setMode(newMode);
-    setTimeLeft(TIMER_DURATIONS[newMode]);
+    setTimeLeft(customDurations[newMode]);
+    setIsEditing(false);
     if (isActive) {
       onStop();
     }
   };
 
   const handleReset = () => {
-    setTimeLeft(TIMER_DURATIONS[mode]);
+    setTimeLeft(customDurations[mode]);
     onReset();
+  };
+
+  const handleTimeClick = () => {
+    if (!isActive) {
+      setIsEditing(true);
+      setEditValue(formatTime(timeLeft));
+    }
+  };
+
+  const parseTimeInput = (input: string): number | null => {
+    // Remove any non-digit characters except colon
+    const cleaned = input.replace(/[^\d:]/g, "");
+    
+    // Handle MM:SS format
+    const parts = cleaned.split(":");
+    if (parts.length === 2) {
+      const minutes = parseInt(parts[0], 10) || 0;
+      const seconds = parseInt(parts[1], 10) || 0;
+      if (minutes >= 0 && seconds >= 0 && seconds < 60) {
+        return minutes * 60 + seconds;
+      }
+    } else if (parts.length === 1 && cleaned.length > 0) {
+      // Handle just minutes (e.g., "25" means 25 minutes)
+      const minutes = parseInt(cleaned, 10);
+      if (minutes >= 0) {
+        return minutes * 60;
+      }
+    }
+    
+    return null;
+  };
+
+  const handleTimeEdit = (value: string) => {
+    setEditValue(value);
+  };
+
+  const handleTimeSave = () => {
+    const parsedSeconds = parseTimeInput(editValue);
+    if (parsedSeconds !== null && parsedSeconds > 0) {
+      const newDurations = { ...customDurations, [mode]: parsedSeconds };
+      setCustomDurations(newDurations);
+      setTimeLeft(parsedSeconds);
+      setIsEditing(false);
+    } else {
+      // Invalid input, revert to current time
+      setEditValue(formatTime(timeLeft));
+      setIsEditing(false);
+    }
+  };
+
+  const handleTimeCancel = () => {
+    setIsEditing(false);
+    setEditValue("");
+  };
+
+  const handleTimeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleTimeSave();
+    } else if (e.key === "Escape") {
+      handleTimeCancel();
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -56,7 +134,8 @@ export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const progress = ((TIMER_DURATIONS[mode] - timeLeft) / TIMER_DURATIONS[mode]) * 100;
+  const currentDuration = customDurations[mode];
+  const progress = ((currentDuration - timeLeft) / currentDuration) * 100;
 
   return (
     <div className="timer-container">
@@ -86,13 +165,33 @@ export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps
           />
         </svg>
         <div className="timer-display">
-          <div className="timer-time">{formatTime(timeLeft)}</div>
+          {isEditing ? (
+            <input
+              ref={inputRef}
+              type="text"
+              className="timer-time-input"
+              value={editValue}
+              onChange={(e) => handleTimeEdit(e.target.value)}
+              onBlur={handleTimeSave}
+              onKeyDown={handleTimeKeyDown}
+              placeholder="MM:SS"
+              maxLength={5}
+            />
+          ) : (
+            <div 
+              className={`timer-time ${!isActive ? "timer-time-editable" : ""}`}
+              onClick={handleTimeClick}
+              title={!isActive ? "Click to edit timer duration" : ""}
+            >
+              {formatTime(timeLeft)}
+            </div>
+          )}
         </div>
       </div>
 
       <div className="timer-modes">
         <button
-          className={`timer-mode-btn ${mode === "focus" ? "" : "inactive"}`}
+          className={`timer-mode-btn ${mode === "focus" ? "active" : "inactive"}`}
           onClick={() => handleModeChange("focus")}
         >
           Focus
@@ -104,7 +203,7 @@ export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps
           Short Break
         </button>
         <button
-          className={`timer-mode-btn ${mode === "longBreak" ? "" : "inactive"}`}
+          className={`timer-mode-btn ${mode === "longBreak" ? "active" : "inactive"}`}
           onClick={() => handleModeChange("longBreak")}
         >
           Long Break

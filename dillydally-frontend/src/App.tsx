@@ -6,7 +6,7 @@ import Timer from "./components/Timer";
 import StatsCard from "./components/StatsCard";
 import Insights from "./components/Insights";
 import type { AttentionState } from "./utils/faceTracking/classify";
-import logoImage from "./assets/logo.svg";
+import logoImage from "./assets/logo.png";
 
 function App() {
   const [isSessionActive, setIsSessionActive] = useState(false);
@@ -36,10 +36,12 @@ function App() {
   };
 
   const handleStart = () => {
+    console.log('⏱️ Timer: Start button clicked, activating session');
     setIsSessionActive(true);
   };
 
   const handleStop = () => {
+    console.log('⏱️ Timer: Stop button clicked, deactivating session');
     setIsSessionActive(false);
   };
 
@@ -107,7 +109,10 @@ function App() {
 
       {/* Hidden Session Capture Component - controls screenshot capture */}
       <div style={{ display: "none" }}>
-        <SessionCapture onSessionChange={setIsSessionActive} />
+        <SessionCapture 
+          isActive={isSessionActive}
+          onSessionChange={setIsSessionActive} 
+        />
       </div>
       
       {/* Face Tracking Component - hidden but active when session is running */}

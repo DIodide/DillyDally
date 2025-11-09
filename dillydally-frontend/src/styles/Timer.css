@@ -30,6 +30,35 @@
   font-size: 4rem;
   font-weight: 700;
   color: #1e3a5f;
+  user-select: none;
+}
+
+.timer-time-editable {
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.timer-time-editable:hover {
+  opacity: 0.7;
+}
+
+.timer-time-input {
+  font-size: 4rem;
+  font-weight: 700;
+  color: #1e3a5f;
+  background: transparent;
+  border: 2px solid #17a2b8;
+  border-radius: 8px;
+  padding: 0.25rem 0.5rem;
+  text-align: center;
+  width: 200px;
+  outline: none;
+  font-family: inherit;
+}
+
+.timer-time-input:focus {
+  border-color: #138496;
+  box-shadow: 0 0 0 3px rgba(23, 162, 184, 0.1);
 }
 
 .timer-modes {
