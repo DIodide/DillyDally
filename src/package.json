@@ -1,0 +1,35 @@
+{
+  "name": "dedalus-mcp",
+  "version": "0.1.0",
+  "description": "A minimal Model Context Protocol server with add integers tool",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "dedalus-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && node -e \"require('fs').chmodSync('dist/index.js', '755')\"",
+    "start": "node dist/index.js --port 3002",
+    "dev:stdio": "tsx index.ts",
+    "dev:http": "tsx index.ts --port 3002",
+    "watch": "tsc --watch",
+    "test": "tsx test.ts",
+    "inspector": "npx @modelcontextprotocol/inspector dist/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.2.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.2"
+  }
+}
