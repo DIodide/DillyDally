@@ -69,3 +69,27 @@ export const getSessionActivities = query({
     return Array.from(activities);
   },
 });
+
+export const createCameraSnapshot = mutation({
+  args: {
+    userId: v.id("users"),
+    sessionId: v.id("sessions"),
+    timestamp: v.number(),
+    attentionState: v.union(
+      v.literal("away_left"),
+      v.literal("away_right"),
+      v.literal("away_up"),
+      v.literal("away_down"),
+      v.literal("no_face"),
+      v.literal("looking_at_screen")
+    ),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("cameraSnapshots", {
+      userId: args.userId,
+      sessionId: args.sessionId,
+      timestamp: args.timestamp,
+      attentionState: args.attentionState,
+    });
+  },
+});
