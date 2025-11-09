@@ -20,7 +20,11 @@ import type { Id } from "@convex/_generated/dataModel";
 
 function SignOut() {
   const { signOut } = useAuthActions();
-  return <button onClick={() => void signOut()}>Sign out</button>;
+  return (
+    <button className="sign-out-btn" onClick={() => void signOut()}>
+      Sign out
+    </button>
+  );
 }
 
 function App() {
@@ -192,13 +196,6 @@ function App() {
           </div>
           <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
             <SignOut />
-            <button className="settings-btn" aria-label="Settings">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M12 1v6m0 6v6m9-9h-6m-6 0H3" />
-                <path d="M19.07 4.93l-4.24 4.24m-5.66 5.66L4.93 19.07m14.14 0l-4.24-4.24m-5.66-5.66L4.93 4.93" />
-              </svg>
-            </button>
           </div>
         </header>
 

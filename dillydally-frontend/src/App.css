@@ -89,6 +89,25 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
+.sign-out-btn {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  background-color: white;
+  color: #1e3a5f;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.sign-out-btn:hover {
+  border-color: #17a2b8;
+  color: #17a2b8;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
 /* Two Column Layout */
 .main-layout {
   display: grid;
