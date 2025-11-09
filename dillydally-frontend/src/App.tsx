@@ -24,7 +24,6 @@ function SignOut() {
 
 function App() {
   const [isSessionActive, setIsSessionActive] = useState(false);
-  const [timesFocused] = useState(0);
   const [breaks] = useState(0);
   const [distractionAlerts, setDistractionAlerts] = useState(0);
   const [currentAttentionState, setCurrentAttentionState] = useState<AttentionState | null>(null);
@@ -105,15 +104,6 @@ function App() {
     // Reset timer logic handled in Timer component
   };
 
-  const formatTime = (minutes: number) => {
-    if (minutes < 60) {
-      return `${minutes} m`;
-    }
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return mins > 0 ? `${hours} h ${mins} m` : `${hours} h`;
-  };
-
   return (
     <div className="App">
       <AuthLoading>
@@ -142,6 +132,11 @@ function App() {
           {/* Left Column: Timer */}
           <div className="left-column">
             <Timer isActive={isSessionActive} onStart={handleStart} onStop={handleStop} onReset={handleReset} />
+            {/* Compact Stats Row */}
+            <div className="compact-stats-row">
+              <StatsCard icon="☕" title="Breaks" value={breaks.toString()} iconBgColor="#d4f1f4" compact />
+              <StatsCard icon="⚠️" title="Distraction Alerts" value={distractionAlerts.toString()} iconBgColor="#ffe5e5" compact />
+            </div>
           </div>
 
           {/* Right Column: Webcam and Messages */}
@@ -149,13 +144,6 @@ function App() {
             <WebcamDisplay attentionState={currentAttentionState} isActive={isSessionActive} />
             <MessageBox sessionId={sessionId} />
           </div>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="stats-grid">
-          <StatsCard icon="🕐" title="Time Focused Today" value={formatTime(timesFocused)} iconBgColor="#d4f1f4" />
-          <StatsCard icon="☕" title="Breaks" value={breaks.toString()} iconBgColor="#d4f1f4" />
-          <StatsCard icon="⚠️" title="Distraction Alerts" value={distractionAlerts.toString()} iconBgColor="#ffe5e5" />
         </div>
 
         {/* Insights Section */}
