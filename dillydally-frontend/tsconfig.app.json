@@ -30,5 +30,6 @@
       "@convex/*": ["../convex/*"]
     }
   },
-  "include": ["src", "../convex"]
+  "include": ["src", "../convex"],
+  "exclude": ["../convex/auth.config.ts"]
 }
