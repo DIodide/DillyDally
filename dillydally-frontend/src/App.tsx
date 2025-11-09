@@ -29,6 +29,11 @@ function App() {
   const [breaks] = useState(0);
   const [distractionAlerts, setDistractionAlerts] = useState(0);
   const [currentAttentionState, setCurrentAttentionState] = useState<AttentionState | null>(null);
+  interface FacePrediction {
+    keypoints: Array<{ x: number; y: number; z?: number }>;
+    [key: string]: unknown;
+  }
+  const [currentFacePrediction, setCurrentFacePrediction] = useState<FacePrediction | null>(null);
   const [showPlayback, setShowPlayback] = useState(false);
   const [endedSessionId, setEndedSessionId] = useState<Id<"sessions"> | null>(null);
   const [showSidebar, setShowSidebar] = useState(false);
@@ -125,10 +130,6 @@ function App() {
     });
   }, []);
 
-  const handleReset = () => {
-    // Reset timer logic handled in Timer component
-  };
-
   return (
     <div className="App">
       <AuthLoading>
@@ -213,7 +214,6 @@ function App() {
                     onStop={handleStop}
                     onPause={handlePause}
                     onResume={handleResume}
-                    onReset={handleReset}
                   />
                   {/* Compact Stats Row */}
                   <div className="compact-stats-row">
@@ -230,7 +230,11 @@ function App() {
 
                 {/* Right Column: Webcam and Messages */}
                 <div className="right-column">
-                  <WebcamDisplay attentionState={currentAttentionState} isActive={isSessionActive} />
+                  <WebcamDisplay
+                    attentionState={currentAttentionState}
+                    facePrediction={currentFacePrediction}
+                    isActive={isSessionActive}
+                  />
                   <MessageBox sessionId={sessionId} />
                 </div>
               </div>
@@ -251,7 +255,11 @@ function App() {
         </div>
 
         {/* Face Tracking Component - preloaded on page visit, only tracks when session is active and not paused */}
-        <FaceTracking isTracking={isSessionActive && !isPaused} onAttentionChange={handleAttentionChange} />
+        <FaceTracking
+          isTracking={isSessionActive && !isPaused}
+          onAttentionChange={handleAttentionChange}
+          onFaceDetected={setCurrentFacePrediction}
+        />
       </Authenticated>
       <Unauthenticated>
         <AuthForm />

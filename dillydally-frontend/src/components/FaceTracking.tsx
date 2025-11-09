@@ -10,12 +10,18 @@ const videoConstraints = {
   facingMode: "user",
 };
 
+interface FacePrediction {
+  keypoints: Array<{ x: number; y: number; z?: number }>;
+  [key: string]: unknown;
+}
+
 interface FaceTrackingProps {
   onAttentionChange?: (state: AttentionState) => void;
+  onFaceDetected?: (face: FacePrediction | null) => void;
   isTracking?: boolean;
 }
 
-export const FaceTracking: React.FC<FaceTrackingProps> = ({ onAttentionChange, isTracking = true }) => {
+export const FaceTracking: React.FC<FaceTrackingProps> = ({ onAttentionChange, onFaceDetected, isTracking = true }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<Webcam>(null);
   const [loaded, setLoaded] = useState(false);
@@ -78,7 +84,13 @@ export const FaceTracking: React.FC<FaceTrackingProps> = ({ onAttentionChange, i
             }
           }
         },
-        () => isTrackingRef.current // Pass isTracking getter to detector
+        () => isTrackingRef.current, // Pass isTracking getter to detector
+        (face: FacePrediction | null) => {
+          // Always pass face detection for mesh overlay, even when not tracking
+          if (onFaceDetected) {
+            onFaceDetected(face);
+          }
+        }
       );
 
       // Store cleanup function

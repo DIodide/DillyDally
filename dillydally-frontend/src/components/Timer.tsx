@@ -8,7 +8,6 @@ interface TimerProps {
   onStop: () => void;
   onPause: () => void;
   onResume: () => void;
-  onReset: () => void;
 }
 
 type TimerMode = "focus" | "shortBreak" | "longBreak";
@@ -26,7 +25,7 @@ const formatTime = (seconds: number) => {
   return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 };
 
-export default function Timer({ isActive, isPaused = false, onStart, onStop, onPause, onResume, onReset }: TimerProps) {
+export default function Timer({ isActive, isPaused = false, onStart, onStop, onPause, onResume }: TimerProps) {
   const [mode, setMode] = useState<TimerMode>("focus");
   const [customDurations, setCustomDurations] = useState<Record<TimerMode, number>>({
     focus: TIMER_DURATIONS.focus,
@@ -174,14 +173,6 @@ export default function Timer({ isActive, isPaused = false, onStart, onStop, onP
     }
   };
 
-  const handleReset = () => {
-    setTimeLeft(customDurations[mode]);
-    startTimeRef.current = null;
-    initialDurationRef.current = customDurations[mode];
-    pausedTimeRef.current = 0;
-    pauseStartTimeRef.current = null;
-    onReset();
-  };
 
   const handleTimeClick = () => {
     if (!isActive) {
