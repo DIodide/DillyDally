@@ -3,9 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "copy-convex": "node scripts/copy-convex-generated.js",
-    "dev": "npm run copy-convex && nodemon",
-    "build": "npm run copy-convex && tsc",
+    "dev": "nodemon",
+    "build": "tsc",
     "check-types": "tsc --noEmit",
     "start": "node dist/index.js"
   },
