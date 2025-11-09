@@ -1,17 +1,53 @@
 # DillyDally  
 ### **See your focus. Improve your focus.**
 
-DillyDally is a next-generation, AI-powered Pomodoro system that doesn't just track **how long** you work — it helps you understand **how well** you were able to focus. Traditional productivity timers assume that time spent = progress. But in a world of constant interruptions, simply measuring time is no longer enough.
+DillyDally is a next-generation, AI-powered Pomodoro system that doesn't just track how long you worked, but how well you worked. Traditional productivity timers assume that time spent = progress. But in a world of constant interruptions, simply measuring time is no longer enough.
 
-DillyDally passively monitors subtle indicators of attention (like tab switching or gaze drift) and uses an LLM to generate **personalized Focus Reports** at the end of every work session — helping you understand your distraction patterns and train deeper focus.
+DillyDally passively monitors subtle indicators of attention (like tab switching or gaze drift) and uses an LLM to generate a personalized focus report at the end of every work session. 
 
-Focus isn't a timer.  
-**Focus is a trainable skill.**  
-DillyDally helps you develop it.
+By adding **intelligent reflection** to the Pomodoro method, DillyDally helps you understand your distraction patterns and train deeper focus.
+
+## How it works
+
+1. User starts a session.
+2. The client periodically captures small, privacy-safe context signals.
+3. The backend generates micro-insights using an LLM.
+4. At session end, micro-insights are aggregated into a focus report, showing:
+   - Moments of deep focus
+   - Distraction triggers
+   - Behavior patterns
+   - Personalized recommendations
+
+This creates a feedback loop and turns ordinary Pomodoros into actual deep focus.
+
+## Features
+
+- ⏱️ **Smart Pomodoro Timer** with customizable durations
+- 👁️ **Real-time Face Tracking** - detects when you look away
+- 📸 **Automated Screenshot Capture** - periodic screen monitoring
+- 🤖 **AI-powered Activity Analysis** via OpenAI Vision API
+- 📊 **Live Distraction Alerts** - real-time attention feedback
+- 🔐 **Secure Authentication** via Convex Auth
+- 💾 **Real-time Database Sync** - all data stored in Convex
+- 📱 **Responsive Design** - works on desktop and tablet
 
 ---
 
-## 🏗️ System Architecture
+## Tech Stack
+
+| Layer | Technology |
+|------|------------|
+| Frontend UI | React 19 + TypeScript + Vite |
+| Face Tracking | TensorFlow.js + MediaPipe Face Mesh |
+| Backend API | Express.js + Node.js |
+| Database / Realtime Backend | **Convex** (Backend-as-a-Service) |
+| Authentication | Convex Auth (Password-based) |
+| AI Processing | OpenAI GPT-4 Vision |
+| File Upload | Multer |
+| Dev Utilities | TSX, Concurrently, Turbo, ESLint |
+
+
+## System Architecture
 
 ```mermaid
 graph TB
@@ -102,34 +138,6 @@ sequenceDiagram
 
 ---
 
-## The Problem
-Most Pomodoro timers only record **time spent**, not **focus quality**.
-
-Which means you can complete 4 sessions and still feel like:
-- Nothing meaningful got done
-- You were fighting distractions the whole time
-- You have no idea *why* your attention slipped
-
-**Focus leaks are invisible. DillyDally makes them visible.**
-
----
-
-## Our Solution
-DillyDally adds **intelligent reflection** to the Pomodoro method:
-
-1. Start a session.
-2. The client periodically captures small, privacy-safe context signals.
-3. The backend generates **micro-insights** using an LLM.
-4. At session end, micro-insights are aggregated into a **Focus Report**, showing:
-   - Moments of deep focus
-   - Distraction triggers
-   - Behavior patterns
-   - Personalized recommendations
-
-This creates a **feedback loop**, turning ordinary Pomodoros into skill-building sessions.
-
----
-
 ## Monorepo Architecture
 
 ```
@@ -153,32 +161,6 @@ DillyDally/
 ├── package.json               # Workspace configuration
 └── vercel.json                # Deployment config
 ```
-
-### Tech Stack
-
-| Layer | Technology |
-|------|------------|
-| Frontend UI | React 19 + TypeScript + Vite |
-| Face Tracking | TensorFlow.js + MediaPipe Face Mesh |
-| Backend API | Express.js + Node.js |
-| Database / Realtime Backend | **Convex** (Backend-as-a-Service) |
-| Authentication | Convex Auth (Password-based) |
-| AI Processing | OpenAI GPT-4 Vision |
-| File Upload | Multer |
-| Dev Utilities | TSX, Concurrently, Turbo, ESLint |
-
----
-
-## Features
-
-- ⏱️ **Smart Pomodoro Timer** with customizable durations
-- 👁️ **Real-time Face Tracking** - detects when you look away
-- 📸 **Automated Screenshot Capture** - periodic screen monitoring
-- 🤖 **AI-powered Activity Analysis** via OpenAI Vision API
-- 📊 **Live Distraction Alerts** - real-time attention feedback
-- 🔐 **Secure Authentication** via Convex Auth
-- 💾 **Real-time Database Sync** - all data stored in Convex
-- 📱 **Responsive Design** - works on desktop and tablet
 
 ---
 
