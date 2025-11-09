@@ -5,31 +5,14 @@ DillyDally is a next-generation, AI-powered Pomodoro system that doesn't just tr
 
 DillyDally passively monitors subtle indicators of attention (like tab switching or gaze drift) and uses an LLM to generate a personalized focus report at the end of every work session. 
 
-By adding **intelligent reflection** to the Pomodoro method, DillyDally helps you understand your distraction patterns and train deeper focus.
-
-## How it works
-
-1. User starts a session.
-2. The client periodically captures small, privacy-safe context signals.
-3. The backend generates micro-insights using an LLM.
-4. At session end, micro-insights are aggregated into a focus report, showing:
-   - Moments of deep focus
-   - Distraction triggers
-   - Behavior patterns
-   - Personalized recommendations
-
-This creates a feedback loop and turns ordinary Pomodoros into actual deep focus.
+By adding intelligent reflection and personalized analytics to the Pomodoro method, DillyDally helps you understand your distraction patterns and train deeper focus.
 
 ## Features
 
-- **Smart Pomodoro Timer** with customizable durations
-- **Real-time Face Tracking** - detects when you look away
-- **Automated Screenshot Capture** - periodic screen monitoring
-- **AI-powered Activity Analysis** via OpenAI Vision API
-- **Live Distraction Alerts** - real-time attention feedback
-- **Secure Authentication** via Convex Auth
-- **Real-time Database Sync** - all data stored in Convex
-- **Responsive Design** - works on desktop and tablet
+- Smart Pomodoro Timer with customizable durations
+- Real-time Face Tracking that detects when you look away
+- Screen Montioring with data collection and deeper analytics
+- AI-powered data analysis 
 
 ---
 
@@ -42,7 +25,7 @@ This creates a feedback loop and turns ordinary Pomodoros into actual deep focus
 | Backend API | Express.js + Node.js |
 | Database / Realtime Backend | **Convex** (Backend-as-a-Service) |
 | Authentication | Convex Auth (Password-based) |
-| AI Processing | OpenAI GPT-4 Vision |
+| AI Processing | OpenAI |
 | File Upload | Multer |
 | Dev Utilities | TSX, Concurrently, Turbo, ESLint |
 
