@@ -3,7 +3,7 @@ import cors from "cors";
 import multer from "multer";
 import { ConvexHttpClient } from "convex/browser";
 // Try to import from local copy first, fallback to relative path for development
-import { api } from "./lib/convex-generated/api.js";
+import { api } from "./lib/api";
 import * as dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
@@ -54,25 +54,23 @@ app.get("/", (req, res) => {
   });
 });
 
-// Example endpoint that queries Convex
-app.get("/api/tasks", async (req, res) => {
-  try {
-    const tasks = await convexClient.query(api.tasks.get, {});
-    res.json({ success: true, tasks });
-  } catch (error) {
-    console.error("Error fetching tasks:", error);
-    res.status(500).json({
-      success: false,
-      error: "Failed to fetch tasks from Convex",
-    });
-  }
-});
-
 // Screenshot upload endpoint
 app.post("/api/screenshots", upload.single("image"), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No image file provided" });
   }
+
+  const userId = req.body.userId;
+  if (!userId) {
+    return res.status(400).json({ error: "User ID is required" });
+  }
+
+  const sessionId = req.body.sessionId;
+  if (!sessionId) {
+    return res.status(400).json({ error: "Session ID is required" });
+  }
+
+  console.log(`[Screenshot] User ID: ${userId}, Session ID: ${sessionId}`);
 
   try {
     // Convert buffer to base64 (for future OpenAI Vision API)
@@ -107,6 +105,38 @@ app.post("/api/screenshots", upload.single("image"), async (req, res) => {
       ],
     });
     console.log(response.output_text);
+
+    // Parse the OpenAI response JSON
+    let snapshotData;
+    try {
+      snapshotData = JSON.parse(response.output_text);
+    } catch (parseError) {
+      console.error("Error parsing OpenAI response:", parseError);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to parse OpenAI response",
+      });
+    }
+
+    // Create snapshot in Convex
+    try {
+      await convexClient.mutation(api.functions.createSnapshot, {
+        userId: userId as any,
+        sessionId: sessionId as any,
+        timestamp: Number(timestamp),
+        isProductive: snapshotData.isProductive,
+        summary: snapshotData.summary,
+        activity: snapshotData.activity,
+        currentTab: snapshotData.current_tab || "",
+      });
+      console.log(`[Snapshot] Created snapshot for session ${sessionId}`);
+    } catch (snapshotError) {
+      console.error("Error creating snapshot:", snapshotError);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to create snapshot in Convex",
+      });
+    }
 
     // Return 204 No Content for successful upload
     res.status(204).end();

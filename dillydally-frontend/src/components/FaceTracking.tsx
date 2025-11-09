@@ -15,10 +15,7 @@ interface FaceTrackingProps {
   isTracking?: boolean;
 }
 
-export const FaceTracking: React.FC<FaceTrackingProps> = ({ 
-  onAttentionChange, 
-  isTracking = true 
-}) => {
+export const FaceTracking: React.FC<FaceTrackingProps> = ({ onAttentionChange, isTracking = true }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<Webcam>(null);
   const [loaded, setLoaded] = useState(false);
@@ -29,34 +26,34 @@ export const FaceTracking: React.FC<FaceTrackingProps> = ({
     if (!isTracking) {
       setLoaded(false);
       initializingRef.current = false;
-      
+
       // Cleanup detector when tracking stops
       if (cleanupRef.current) {
         cleanupRef.current();
         cleanupRef.current = null;
       }
-      
+
       // Stop webcam stream
       const video = videoRef.current?.video;
       if (video && video.srcObject) {
         const stream = video.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
         video.srcObject = null;
       }
     }
-    
+
     // Cleanup on unmount
     return () => {
       if (cleanupRef.current) {
         cleanupRef.current();
         cleanupRef.current = null;
       }
-      
+
       // Stop webcam stream on unmount
       const video = videoRef.current?.video;
       if (video && video.srcObject) {
         const stream = video.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
         video.srcObject = null;
       }
     };
@@ -65,10 +62,10 @@ export const FaceTracking: React.FC<FaceTrackingProps> = ({
   const handleVideoLoad = async () => {
     if (!isTracking) return;
     if (loaded || initializingRef.current) return;
-    
+
     const video = videoRef.current?.video;
     if (!video || !canvasRef.current) return;
-    
+
     // Check if video is playing
     if (video.paused) {
       console.log("Video is paused, attempting to play...");
@@ -78,7 +75,7 @@ export const FaceTracking: React.FC<FaceTrackingProps> = ({
         console.error("Failed to play video:", e);
       }
     }
-    
+
     // Wait for video to have valid dimensions
     if (video.videoWidth === 0 || video.videoHeight === 0) {
       console.log("Video dimensions not ready yet, waiting...");
@@ -88,7 +85,7 @@ export const FaceTracking: React.FC<FaceTrackingProps> = ({
     console.log("✅ Starting face detector with video dimensions:", video.videoWidth, "x", video.videoHeight);
     console.log("Video ready state:", video.readyState, "Playing:", !video.paused);
     initializingRef.current = true;
-    
+
     try {
       const cleanup = await runDetector(video, canvasRef.current, (result: AttentionState) => {
         if (result) {
@@ -98,7 +95,7 @@ export const FaceTracking: React.FC<FaceTrackingProps> = ({
           }
         }
       });
-      
+
       // Store cleanup function
       cleanupRef.current = cleanup;
       setLoaded(true);
@@ -113,39 +110,40 @@ export const FaceTracking: React.FC<FaceTrackingProps> = ({
   }
 
   return (
-    <div style={{ 
-      position: "fixed", 
-      top: "-9999px", 
-      left: "-9999px",
-      pointerEvents: "none"
-    }}>
+    <div
+      style={{
+        position: "fixed",
+        top: "-9999px",
+        left: "-9999px",
+        pointerEvents: "none",
+      }}>
       {/* Hidden webcam for face detection - positioned offscreen */}
-      <Webcam
-        ref={videoRef}
-        width={inputResolution.width}
-        height={inputResolution.height}
-        videoConstraints={videoConstraints}
-        onLoadedMetadata={handleVideoLoad}
-        onCanPlay={handleVideoLoad}
-        style={{ 
+      {React.createElement(Webcam as unknown as React.ElementType, {
+        ref: videoRef,
+        width: inputResolution.width,
+        height: inputResolution.height,
+        videoConstraints: videoConstraints,
+        onLoadedMetadata: handleVideoLoad,
+        onCanPlay: handleVideoLoad,
+        style: {
           position: "absolute",
           opacity: 0,
-          pointerEvents: "none"
-        }}
-        mirrored
-        autoPlay
-        playsInline
-      />
+          pointerEvents: "none",
+        },
+        mirrored: true,
+        autoPlay: true,
+        playsInline: true,
+      })}
 
       {/* Hidden canvas for processing */}
       <canvas
         ref={canvasRef}
         width={inputResolution.width}
         height={inputResolution.height}
-        style={{ 
+        style={{
           position: "absolute",
           opacity: 0,
-          pointerEvents: "none"
+          pointerEvents: "none",
         }}
       />
     </div>
@@ -153,4 +151,3 @@ export const FaceTracking: React.FC<FaceTrackingProps> = ({
 };
 
 export default FaceTracking;
-
