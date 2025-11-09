@@ -15,9 +15,16 @@ export const runDetector = async (
   canvas: HTMLCanvasElement,
   cb?: (state: AttentionState) => void
 ) => {
-  // Ensure TensorFlow backend is ready
-  await tf.setBackend("webgl");
-  await tf.ready();
+  try {
+    console.log("🔧 Initializing TensorFlow backend...");
+    // Ensure TensorFlow backend is ready
+    await tf.setBackend("webgl");
+    await tf.ready();
+    console.log("✅ TensorFlow backend ready");
+  } catch (error) {
+    console.error("❌ Failed to initialize TensorFlow backend:", error);
+    throw new Error("TensorFlow backend initialization failed");
+  }
   
   const model = faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh;
   const detectorConfig = { 
@@ -25,7 +32,15 @@ export const runDetector = async (
     refineLandmarks: false 
   };
 
-  const detector = await faceLandmarksDetection.createDetector(model, detectorConfig);
+  let detector;
+  try {
+    console.log("📦 Loading face detection model...");
+    detector = await faceLandmarksDetection.createDetector(model, detectorConfig);
+    console.log("✅ Face detection model loaded");
+  } catch (error) {
+    console.error("❌ Failed to load face detection model:", error);
+    throw new Error("Face detection model loading failed");
+  }
 
   let isRunning = true;
   let frameCount = 0;
