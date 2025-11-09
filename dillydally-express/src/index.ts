@@ -78,6 +78,32 @@ app.post("/api/screenshots", upload.single("image"), async (req, res) => {
     const timestamp = req.body.ts || Date.now();
 
     console.log(`[Screenshot ${timestamp}] base64 length: ${base64.length}, prefix: ${base64.slice(0, 100)}`);
+
+    // Get existing activities for this session
+    let existingActivities: string[] = [];
+    try {
+      existingActivities = await convexClient.query(api.functions.getSessionActivities, {
+        sessionId: sessionId as any,
+      });
+      console.log(`[Session ${sessionId}] Found ${existingActivities.length} existing activities:`, existingActivities);
+    } catch (queryError) {
+      console.error("Error fetching session activities:", queryError);
+      // Continue without existing activities if query fails
+    }
+
+    // Build prompt with existing activities context
+    let promptText = `Evaluate what the user is doing in the image to provide a binary classification of whether the user is doing something productive or not. Use your observations to populate the following json schema:
+              {
+                isProductive: bool,
+                summary: string,
+                current_tab: string | null // if not inside of a browser,
+                activity: string // 1-2 word phrase max ex: YouTube, Instagram, Essay Writing
+              }`;
+
+    if (existingActivities.length > 0) {
+      promptText += `\n\nExisting activities for this session: ${existingActivities.join(", ")}. Please try to classify the image into one of these existing activity categories if it reasonably fits. If the image doesn't match any existing category, it's okay to create a new activity category.`;
+    }
+
     // mismatch between typedef and actual implementation
     const response = await (client.responses.create as any)({
       model: "gpt-4.1-mini",
@@ -87,14 +113,7 @@ app.post("/api/screenshots", upload.single("image"), async (req, res) => {
           content: [
             {
               type: "input_text",
-              text: `Evaluate what the user is doing in the image to provide a binary classification of whether the user is doing something productive or not. Use your observations to populate the following json schema:
-              {
-                isProductive: bool,
-                summary: string,
-                current_tab: string | null // if not inside of a browser,
-                activity: string // 1-2 word phrase max ex: YouTube, Instagram, Essay Writing
-              }
-              `,
+              text: promptText,
             },
             {
               type: "input_image",

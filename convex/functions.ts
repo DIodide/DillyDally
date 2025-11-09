@@ -47,3 +47,25 @@ export const createSnapshot = mutation({
     });
   },
 });
+
+export const getSessionActivities = query({
+  args: {
+    sessionId: v.id("sessions"),
+  },
+  handler: async (ctx, args) => {
+    const snapshots = await ctx.db
+      .query("snapshots")
+      .filter((q) => q.eq(q.field("sessionId"), args.sessionId))
+      .collect();
+
+    // Get unique activities
+    const activities = new Set<string>();
+    for (const snapshot of snapshots) {
+      if (snapshot.activity) {
+        activities.add(snapshot.activity);
+      }
+    }
+
+    return Array.from(activities);
+  },
+});
