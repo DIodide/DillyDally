@@ -17,11 +17,17 @@ const isTabVisible = (): boolean => {
   return !document.hidden && document.visibilityState === "visible";
 };
 
+interface FacePrediction {
+  keypoints: Array<{ x: number; y: number; z?: number }>;
+  [key: string]: unknown;
+}
+
 export const runDetector = async (
   video: HTMLVideoElement,
   canvas: HTMLCanvasElement,
   cb?: (state: AttentionState) => void,
-  isActive?: () => boolean // Optional function to check if detection should be active
+  isActive?: () => boolean, // Optional function to check if detection should be active
+  onFaceDetected?: (face: FacePrediction | null) => void // Optional callback for face prediction object
 ) => {
   try {
     console.log("🔧 Initializing TensorFlow backend...");
@@ -100,6 +106,12 @@ export const runDetector = async (
 
       // Then draw overlays (mesh + optional direction triangles)
       drawMesh(face, ctx);
+
+      // Notify about face detection for mesh overlay
+      if (onFaceDetected) {
+        // Cast face to FacePrediction type (MediaPipe Face type is compatible)
+        onFaceDetected(face as FacePrediction | null);
+      }
 
       if (cb) cb(state);
     } catch (error) {

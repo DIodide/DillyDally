@@ -58,3 +58,24 @@
   transition: color 0.3s ease;
 }
 
+.webcam-mesh-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #666;
+  cursor: pointer;
+  user-select: none;
+}
+
+.webcam-mesh-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #007bff;
+}
+
+.webcam-mesh-toggle span {
+  font-weight: 500;
+}
+
