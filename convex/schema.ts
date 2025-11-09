@@ -20,6 +20,17 @@ export default defineSchema({
   sessions: defineTable({
     userId: v.id("users"),
   }),
-
+  cameraSnapshots: defineTable({
+    userId: v.id("users"),
+    sessionId: v.id("sessions"),
+    timestamp: v.number(),
+    attentionState: v.union(
+      v.literal("away_left"),
+      v.literal("away_right"),
+      v.literal("away_up"),
+      v.literal("away_down"),
+      v.literal("no_face"),
+      v.literal("looking_at_screen")
+    ),
+  }),
 });
-
