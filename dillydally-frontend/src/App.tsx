@@ -1,5 +1,5 @@
 import "./App.css";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import SessionCapture from "./components/SessionCapture";
 import FaceTracking from "./components/FaceTracking";
 import Timer from "./components/Timer";
@@ -47,48 +47,87 @@ function App() {
   const lastStateRef = useRef("");
   const [sessionId, setSessionId] = useState<Id<"sessions"> | null>(null);
 
-  const handleAttentionChange = async (state: AttentionState) => {
-    // Update current attention state for webcam display
-    setCurrentAttentionState(state);
+  // Use refs to always access current values in the callback
+  const sessionIdRef = useRef<Id<"sessions"> | null>(null);
+  const isSessionActiveRef = useRef(false);
+  const isPausedRef = useRef(false);
+  const userRef = useRef(user);
 
-    const now = Date.now();
-    const timeSinceLastLog = now - lastLogTimeRef.current;
-    const stateChanged = state.state !== lastStateRef.current;
+  // Keep refs in sync with state
+  useEffect(() => {
+    sessionIdRef.current = sessionId;
+  }, [sessionId]);
 
-    // Count distraction alerts when user looks away
-    if (stateChanged && state.state !== "looking_at_screen" && state.state !== "no_face") {
-      setDistractionAlerts((prev) => prev + 1);
-    }
+  useEffect(() => {
+    isSessionActiveRef.current = isSessionActive;
+  }, [isSessionActive]);
 
-    // Only log if 1 second has passed OR if the state has changed
-    if (timeSinceLastLog >= 1000 || stateChanged) {
-      console.log(
-        `👁️ Face tracking: ${state.state} (confidence: ${Math.round(state.confidence * 100)}%, yaw: ${state.yaw.toFixed(2)}, pitch: ${state.pitch.toFixed(2)})`
-      );
-      lastLogTimeRef.current = now;
-      lastStateRef.current = state.state;
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+  }, [isPaused]);
 
-      // Save camera snapshot to database if session is active, not paused, and user is authenticated
-      if (isSessionActive && !isPaused && user && sessionId) {
-        try {
-          await createCameraSnapshot({
-            userId: user._id,
-            sessionId: sessionId,
-            timestamp: now,
-            attentionState: state.state as
-              | "away_left"
-              | "away_right"
-              | "away_up"
-              | "away_down"
-              | "no_face"
-              | "looking_at_screen",
-          });
-        } catch (error) {
-          console.error("Failed to save camera snapshot:", error);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
+  const handleAttentionChange = useCallback(
+    async (state: AttentionState) => {
+      // Update current attention state for webcam display
+      setCurrentAttentionState(state);
+
+      const now = Date.now();
+      const timeSinceLastLog = now - lastLogTimeRef.current;
+      const stateChanged = state.state !== lastStateRef.current;
+
+      // Count distraction alerts when user looks away
+      if (stateChanged && state.state !== "looking_at_screen" && state.state !== "no_face") {
+        setDistractionAlerts((prev) => prev + 1);
+      }
+
+      // Only log if 1 second has passed OR if the state has changed
+      if (timeSinceLastLog >= 1000 || stateChanged) {
+        console.log(
+          `👁️ Face tracking: ${state.state} (confidence: ${Math.round(state.confidence * 100)}%, yaw: ${state.yaw.toFixed(2)}, pitch: ${state.pitch.toFixed(2)})`
+        );
+        lastLogTimeRef.current = now;
+        lastStateRef.current = state.state;
+
+        // Use refs to get current values
+        const currentSessionId = sessionIdRef.current;
+        const currentIsSessionActive = isSessionActiveRef.current;
+        const currentIsPaused = isPausedRef.current;
+        const currentUser = userRef.current;
+
+        // Save camera snapshot to database if session is active, not paused, and user is authenticated
+        if (currentIsSessionActive && !currentIsPaused && currentUser && currentSessionId) {
+          try {
+            await createCameraSnapshot({
+              userId: currentUser._id,
+              sessionId: currentSessionId,
+              timestamp: now,
+              attentionState: state.state as
+                | "away_left"
+                | "away_right"
+                | "away_up"
+                | "away_down"
+                | "no_face"
+                | "looking_at_screen",
+            });
+            console.log(`📸 Camera snapshot saved: ${state.state} at ${new Date(now).toISOString()}`);
+          } catch (error) {
+            console.error("Failed to save camera snapshot:", error);
+          }
+        } else {
+          // Debug: log why snapshot wasn't saved
+          if (!currentIsSessionActive) console.log("⚠️ Camera snapshot skipped: session not active");
+          if (currentIsPaused) console.log("⚠️ Camera snapshot skipped: session paused");
+          if (!currentUser) console.log("⚠️ Camera snapshot skipped: user not authenticated");
+          if (!currentSessionId) console.log("⚠️ Camera snapshot skipped: no session ID");
         }
       }
-    }
-  };
+    },
+    [createCameraSnapshot]
+  );
 
   const handleStart = async () => {
     console.log("⏱️ Timer: Start button clicked, activating session");

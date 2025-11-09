@@ -14,7 +14,7 @@ interface SessionCaptureProps {
 
 export default function SessionCapture({
   intervalMs = 3000,
-  quality = 0.6,
+  quality = 0.5,
   maxWidth = 1280,
   isActive = false,
   sessionId,

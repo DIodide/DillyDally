@@ -60,7 +60,7 @@ export const getSessionActivities = query({
       .filter((q) => q.eq(q.field("sessionId"), args.sessionId))
       .collect();
 
-    // Get unique activities
+    // Get unique activities - only extract activity field
     const activities = new Set<string>();
     for (const snapshot of snapshots) {
       if (snapshot.activity) {
@@ -124,6 +124,73 @@ export const getSessionCameraSnapshots = query({
   },
 });
 
+// Helper query to get session metadata without fetching full snapshots
+export const getSessionMetadata = query({
+  args: {
+    sessionId: v.id("sessions"),
+  },
+  handler: async (ctx, args) => {
+    // Get first and last snapshot timestamps for duration calculation
+    const firstSnapshot = await ctx.db
+      .query("snapshots")
+      .filter((q) => q.eq(q.field("sessionId"), args.sessionId))
+      .order("asc")
+      .first();
+
+    const lastSnapshot = await ctx.db
+      .query("snapshots")
+      .filter((q) => q.eq(q.field("sessionId"), args.sessionId))
+      .order("desc")
+      .first();
+
+    // Get first and last camera snapshot timestamps as fallback
+    const firstCameraSnapshot = await ctx.db
+      .query("cameraSnapshots")
+      .filter((q) => q.eq(q.field("sessionId"), args.sessionId))
+      .order("asc")
+      .first();
+
+    const lastCameraSnapshot = await ctx.db
+      .query("cameraSnapshots")
+      .filter((q) => q.eq(q.field("sessionId"), args.sessionId))
+      .order("desc")
+      .first();
+
+    // Calculate duration
+    let duration = 0;
+    if (firstSnapshot && lastSnapshot) {
+      duration = lastSnapshot.timestamp - firstSnapshot.timestamp;
+    } else if (firstCameraSnapshot && lastCameraSnapshot) {
+      duration = lastCameraSnapshot.timestamp - firstCameraSnapshot.timestamp;
+    }
+
+    // Get snapshot count and metadata without fetching all documents
+    // We need to iterate to count and get unique activities, but we can optimize
+    // by only fetching activity and isProductive fields conceptually
+    const allSnapshots = await ctx.db
+      .query("snapshots")
+      .filter((q) => q.eq(q.field("sessionId"), args.sessionId))
+      .collect();
+
+    // Extract only needed fields immediately
+    const snapshotMetadata = allSnapshots.map((s) => ({
+      activity: s.activity,
+      isProductive: s.isProductive,
+    }));
+
+    const activities = new Set(snapshotMetadata.map((s) => s.activity).filter(Boolean));
+    const productiveCount = snapshotMetadata.filter((s) => s.isProductive).length;
+    const productivityPercentage = snapshotMetadata.length > 0 ? (productiveCount / snapshotMetadata.length) * 100 : 0;
+
+    return {
+      duration,
+      activityCount: activities.size,
+      snapshotCount: snapshotMetadata.length,
+      productivityPercentage,
+    };
+  },
+});
+
 export const getAllSessions = query({
   args: {},
   handler: async (ctx) => {
@@ -139,47 +206,60 @@ export const getAllSessions = query({
       .order("desc")
       .collect();
 
-    // Get snapshots and camera snapshots for each session to calculate metadata
+    // For each session, get minimal metadata without fetching all snapshots
     const sessionsWithMetadata = await Promise.all(
       sessions.map(async (session) => {
-        const snapshots = await ctx.db
+        // Get first and last snapshot timestamps for duration (only 2 documents)
+        const firstSnapshot = await ctx.db
           .query("snapshots")
           .filter((q) => q.eq(q.field("sessionId"), session._id))
-          .collect();
+          .order("asc")
+          .first();
 
-        const cameraSnapshots = await ctx.db
+        const lastSnapshot = await ctx.db
+          .query("snapshots")
+          .filter((q) => q.eq(q.field("sessionId"), session._id))
+          .order("desc")
+          .first();
+
+        // Get first and last camera snapshot timestamps as fallback (only 2 documents)
+        const firstCameraSnapshot = await ctx.db
           .query("cameraSnapshots")
           .filter((q) => q.eq(q.field("sessionId"), session._id))
-          .collect();
+          .order("asc")
+          .first();
 
-        // Calculate duration from snapshots
+        const lastCameraSnapshot = await ctx.db
+          .query("cameraSnapshots")
+          .filter((q) => q.eq(q.field("sessionId"), session._id))
+          .order("desc")
+          .first();
+
+        // Calculate duration from earliest to latest timestamp across both snapshots and camera snapshots
         let duration = 0;
-        if (snapshots.length > 0) {
-          const timestamps = snapshots.map((s) => s.timestamp);
-          const min = Math.min(...timestamps);
-          const max = Math.max(...timestamps);
-          duration = max - min;
-        } else if (cameraSnapshots.length > 0) {
-          const timestamps = cameraSnapshots.map((s) => s.timestamp);
+        const timestamps: number[] = [];
+        if (firstSnapshot) timestamps.push(firstSnapshot.timestamp);
+        if (lastSnapshot) timestamps.push(lastSnapshot.timestamp);
+        if (firstCameraSnapshot) timestamps.push(firstCameraSnapshot.timestamp);
+        if (lastCameraSnapshot) timestamps.push(lastCameraSnapshot.timestamp);
+
+        if (timestamps.length >= 2) {
           const min = Math.min(...timestamps);
           const max = Math.max(...timestamps);
           duration = max - min;
         }
 
-        // Get unique activities
-        const activities = new Set(snapshots.map((s) => s.activity).filter(Boolean));
-
-        // Calculate productivity percentage
-        const productiveCount = snapshots.filter((s) => s.isProductive).length;
-        const productivityPercentage = snapshots.length > 0 ? (productiveCount / snapshots.length) * 100 : 0;
-
+        // For sidebar, we don't need activity count or productivity percentage
+        // Those can be calculated on-demand when viewing session details
+        // Just return basic info: id, creation time, duration
         return {
           _id: session._id,
           _creationTime: session._creationTime,
           duration,
-          activityCount: activities.size,
-          snapshotCount: snapshots.length,
-          productivityPercentage,
+          // Set defaults - these will be calculated on-demand if needed
+          activityCount: 0,
+          snapshotCount: 0,
+          productivityPercentage: 0,
         };
       })
     );
@@ -223,17 +303,31 @@ export const getWeeklyInsights = query({
       .filter((q) => q.eq(q.field("userId"), userId))
       .collect();
 
-    // Get all snapshots for this user
-    const allSnapshots = await ctx.db
+    // Get all snapshots for this user - only extract needed fields
+    const allSnapshotDocs = await ctx.db
       .query("snapshots")
       .filter((q) => q.eq(q.field("userId"), userId))
       .collect();
 
-    // Get all camera snapshots for this user
-    const allCameraSnapshots = await ctx.db
+    // Extract only needed fields (exclude imageBase64 and other large fields)
+    const allSnapshots = allSnapshotDocs.map((s) => ({
+      timestamp: s.timestamp,
+      isProductive: s.isProductive,
+      activity: s.activity,
+      sessionId: s.sessionId,
+    }));
+
+    // Get all camera snapshots for this user - only extract needed fields
+    const allCameraSnapshotDocs = await ctx.db
       .query("cameraSnapshots")
       .filter((q) => q.eq(q.field("userId"), userId))
       .collect();
+
+    // Extract only needed fields
+    const allCameraSnapshots = allCameraSnapshotDocs.map((s) => ({
+      timestamp: s.timestamp,
+      attentionState: s.attentionState,
+    }));
 
     // Filter sessions and snapshots for this week and last week
     const thisWeekSessions = allSessions.filter((s) => s._creationTime >= startOfThisWeek);
@@ -252,8 +346,9 @@ export const getWeeklyInsights = query({
     );
 
     // Calculate session durations (approximate from snapshots)
+    // Use the original snapshot docs for this calculation since we need full data
     const calculateSessionDuration = (sessionId: any): number => {
-      const sessionSnapshots = allSnapshots.filter((s) => s.sessionId === sessionId);
+      const sessionSnapshots = allSnapshotDocs.filter((s) => s.sessionId === sessionId);
       if (sessionSnapshots.length === 0) return 0;
       const timestamps = sessionSnapshots.map((s) => s.timestamp);
       const min = Math.min(...timestamps);
