@@ -315,8 +315,5 @@ npx convex deploy
 ```
 
 ---
-
-```
-Built with intention, curiosity, and deep work energy
-HackPrinceton 2025
-```
+Built with intention, curiosity, and deep work energy! 
+HackPrinceton 2025 :)
