@@ -20,7 +20,8 @@ const isTabVisible = (): boolean => {
 export const runDetector = async (
   video: HTMLVideoElement,
   canvas: HTMLCanvasElement,
-  cb?: (state: AttentionState) => void
+  cb?: (state: AttentionState) => void,
+  isActive?: () => boolean // Optional function to check if detection should be active
 ) => {
   try {
     console.log("🔧 Initializing TensorFlow backend...");
@@ -57,6 +58,13 @@ export const runDetector = async (
 
   const detect = async () => {
     if (!isRunning) return;
+
+    // Check if detection should be active (if provided)
+    if (isActive && !isActive()) {
+      // Skip processing but continue scheduling
+      scheduleNext();
+      return;
+    }
 
     // Validate video dimensions before processing
     if (!video || video.videoWidth === 0 || video.videoHeight === 0 || video.readyState < 2) {
