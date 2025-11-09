@@ -101,43 +101,6 @@ graph TB
 
 ---
 
-## Data Flow
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Frontend
-    participant FaceTracking
-    participant Express
-    participant OpenAI
-    participant Convex
-    
-    User->>Frontend: Start Focus Session
-    Frontend->>Convex: startSession()
-    Convex-->>Frontend: sessionId
-    
-    loop Every 3 seconds
-        Frontend->>Express: Upload Screenshot
-        Express->>OpenAI: Analyze Screenshot
-        OpenAI-->>Express: Activity Analysis
-        Express->>Convex: createSnapshot()
-    end
-    
-    loop Real-time
-        FaceTracking->>Frontend: Attention State
-        Frontend->>Convex: createCameraSnapshot()
-        alt User Looking Away
-            Frontend->>Frontend: Increment Distraction Alert
-        end
-    end
-    
-    User->>Frontend: Stop Session
-    Frontend->>Convex: End Session
-    Convex-->>Frontend: Session Summary
-```
-
----
-
 ## Monorepo Architecture
 
 ```
