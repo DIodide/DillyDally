@@ -92,12 +92,10 @@ export default function SessionsSidebar({ selectedSessionId, onSelectSession, on
             onClick={() => onSelectSession(session._id)}>
             <div className="session-item-header">
               <div className="session-item-date">{formatDate(session._creationTime)}</div>
-              {session.productivityPercentage > 0 && (
-                <div
-                  className={`session-item-productivity ${session.productivityPercentage >= 70 ? "high" : session.productivityPercentage >= 40 ? "medium" : "low"}`}>
-                  {session.productivityPercentage.toFixed(0)}%
-                </div>
-              )}
+              <div
+                className={`session-item-productivity ${session.productivityPercentage >= 70 ? "high" : session.productivityPercentage >= 40 ? "medium" : "low"}`}>
+                {session.productivityPercentage.toFixed(0)}%
+              </div>
             </div>
             <div className="session-item-meta">
               <span className="session-item-duration">{formatDuration(session.duration)}</span>

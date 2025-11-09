@@ -260,17 +260,43 @@ export const getAllSessions = query({
           duration = max - min;
         }
 
-        // For sidebar, we don't need activity count or productivity percentage
-        // Those can be calculated on-demand when viewing session details
-        // Just return basic info: id, creation time, duration
+        // Get all snapshots for this session to calculate activity count, snapshot count, and productivity percentage
+        const allSnapshots = await ctx.db
+          .query("snapshots")
+          .withIndex("by_session_id", (q) => q.eq("sessionId", session._id))
+          .collect();
+
+        // Extract only needed fields for metadata calculation
+        const snapshotMetadata = allSnapshots.map((s) => ({
+          activity: s.activity,
+          isProductive: s.isProductive,
+        }));
+
+        // Calculate unique activities
+        const activities = new Set(
+          snapshotMetadata.map((s) => s.activity).filter(Boolean)
+        );
+        const activityCount = activities.size;
+
+        // Calculate snapshot count
+        const snapshotCount = snapshotMetadata.length;
+
+        // Calculate productivity percentage
+        const productiveCount = snapshotMetadata.filter(
+          (s) => s.isProductive
+        ).length;
+        const productivityPercentage =
+          snapshotMetadata.length > 0
+            ? (productiveCount / snapshotMetadata.length) * 100
+            : 0;
+
         return {
           _id: session._id,
           _creationTime: session._creationTime,
           duration,
-          // Set defaults - these will be calculated on-demand if needed
-          activityCount: 0,
-          snapshotCount: 0,
-          productivityPercentage: 0,
+          activityCount,
+          snapshotCount,
+          productivityPercentage,
         };
       })
     );
