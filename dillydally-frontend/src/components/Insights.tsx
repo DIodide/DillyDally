@@ -10,7 +10,8 @@ interface InsightItemProps {
 }
 
 function InsightItem({ title, subtitle, value, trend }: InsightItemProps) {
-  const trendColor = trend?.startsWith("+") ? "#28a745" : trend?.startsWith("-") ? "#dc3545" : "#6c757d";
+  const trendColor = trend?.startsWith("+") ? "#17a2b8" : trend?.startsWith("-") ? "#dc3545" : "#6c757d";
+  const trendBgColor = trend?.startsWith("+") ? "#d4f1f4" : trend?.startsWith("-") ? "#f8d7da" : "#f8f9fa";
 
   return (
     <div className="insight-item">
@@ -20,7 +21,7 @@ function InsightItem({ title, subtitle, value, trend }: InsightItemProps) {
       </div>
       <div className="insight-right">
         {trend && (
-          <span className="insight-trend" style={{ color: trendColor }}>
+          <span className="insight-trend" style={{ color: trendColor, backgroundColor: trendBgColor }}>
             {trend}
           </span>
         )}
