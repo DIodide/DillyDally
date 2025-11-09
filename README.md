@@ -1,5 +1,5 @@
 # DillyDally  
-### **See your focus. Improve your focus.** 
+### **See your focus. Improve your focus.** 🧠✨
 
 DillyDally is a next-generation, AI-powered Pomodoro system that doesn’t just track **how long** you work — it helps you understand **how well** you were able to focus. Traditional productivity timers assume that time spent = progress. But in a world of constant interruptions, simply measuring time is no longer enough.
 
@@ -11,7 +11,7 @@ DillyDally helps you develop it.
 
 ---
 
-## The Problem
+## 🎯 The Problem
 Most Pomodoro timers only record **time spent**, not **focus quality**.
 
 Which means you can complete 4 sessions and still feel like:
@@ -23,7 +23,7 @@ Which means you can complete 4 sessions and still feel like:
 
 ---
 
-## Our Solution
+## 💡 Our Solution
 DillyDally adds **intelligent reflection** to the Pomodoro method:
 
 1. Start a session.
@@ -39,7 +39,57 @@ This creates a **feedback loop**, turning ordinary Pomodoros into skill-building
 
 ---
 
-## What Makes DillyDally Different
+## 🌀 How It Works
+
+DillyDally transforms each focus session into a **feedback loop** that surfaces your attention behavior.
+
+### High-Level Flow
+
+```mermaid
+flowchart LR
+    subgraph Frontend (React + Vite)
+        A[Start Session]
+        B[Timer Running]
+        C[Capture Focus Signals
+(tab switches, optional gaze cues)]
+        D[End Session]
+    end
+
+    subgraph Backend (Express.js)
+        E[Receive Signals & Optional Images]
+        F[LLM Generates Micro-Insights]
+        G[Return Insight Chunks]
+    end
+
+    subgraph Convex (Database + Functions)
+        H[Store Micro-Insights]
+        I[Aggregate into Session Summary]
+        J[Serve Focus Report to UI]
+    end
+
+    A --> B --> C --> E --> F --> G --> H --> I --> J --> D
+```
+
+### What Counts as a Focus Signal?
+- Tab or window change
+- Periods of inactivity
+- Optional: periodic low-frequency screenshot (user-controlled, opt-in)
+- Context: What app, task, or environment you were working in
+
+### How the Report Is Generated
+1. Signals are timestamped and sent to the backend.
+2. Backend calls an LLM to interpret the moment as a **micro-insight**.
+3. Micro-insights accumulate throughout the session.
+4. At the end, they are merged into a structured **Session Focus Report**.
+
+The system never shames or scores you — it reflects your **actual attention behavior** and suggests ways to improve.
+
+---
+
+
+---
+
+## 🏆 What Makes DillyDally Different
 
 | Traditional Productivity Tools | **DillyDally** |
 |---|---|
@@ -53,7 +103,7 @@ DillyDally is not a timer —
 
 ---
 
-## Monorepo Architecture
+## 🧱 Monorepo Architecture
 
 ```
 DillyDally/
@@ -86,7 +136,7 @@ DillyDally/
 
 ---
 
-## Features
+## 🚀 Features
 
 - AI-generated **Focus Reports**
 - Live Pomodoro-style session timer
@@ -98,7 +148,7 @@ DillyDally/
 
 ---
 
-## Setup Instructions
+## 🔧 Setup Instructions
 
 ### 1. Install Dependencies
 ```bash
@@ -140,7 +190,7 @@ npm run dev --workspace=dillydally-express
 
 ---
 
-## API Endpoints (Express)
+## 🧪 API Endpoints (Express)
 
 ### GET `/`
 ```json
@@ -163,7 +213,7 @@ npm run dev --workspace=dillydally-express
 
 ---
 
-## Convex Functions
+## 📦 Convex Functions
 
 ### Schema (`schema.ts`)
 ```ts
@@ -178,7 +228,7 @@ Returns all tasks.
 
 ---
 
-## Development Workflow
+## 🧭 Development Workflow
 
 | Task | Work In |
 |------|--------|
@@ -190,7 +240,7 @@ Convex automatically syncs & regenerates types live.
 
 ---
 
-## Troubleshooting
+## 🛠 Troubleshooting
 
 | Issue | Fix |
 |------|-----|
@@ -201,7 +251,7 @@ Convex automatically syncs & regenerates types live.
 
 ---
 
-## Production Deployment
+## 🏁 Production Deployment
 
 ### Frontend
 ```bash
