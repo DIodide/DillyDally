@@ -178,9 +178,16 @@ export const getSessionMetadata = query({
       isProductive: s.isProductive,
     }));
 
-    const activities = new Set(snapshotMetadata.map((s) => s.activity).filter(Boolean));
-    const productiveCount = snapshotMetadata.filter((s) => s.isProductive).length;
-    const productivityPercentage = snapshotMetadata.length > 0 ? (productiveCount / snapshotMetadata.length) * 100 : 0;
+    const activities = new Set(
+      snapshotMetadata.map((s) => s.activity).filter(Boolean)
+    );
+    const productiveCount = snapshotMetadata.filter(
+      (s) => s.isProductive
+    ).length;
+    const productivityPercentage =
+      snapshotMetadata.length > 0
+        ? (productiveCount / snapshotMetadata.length) * 100
+        : 0;
 
     return {
       duration,
@@ -195,16 +202,20 @@ export const getAllSessions = query({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
-    if (userId === null) {
-      return null;
-    }
 
-    // Get all sessions for this user
-    const sessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_user_id", (q) => q.eq("userId", userId))
-      .order("desc")
-      .collect();
+    // For hackathon: allow unauthenticated access to all sessions
+    let sessions;
+    if (userId === null) {
+      // Get all sessions from all users
+      sessions = await ctx.db.query("sessions").order("desc").collect();
+    } else {
+      // Get all sessions for this user
+      sessions = await ctx.db
+        .query("sessions")
+        .withIndex("by_user_id", (q) => q.eq("userId", userId))
+        .order("desc")
+        .collect();
+    }
 
     // For each session, get minimal metadata without fetching all snapshots
     const sessionsWithMetadata = await Promise.all(
@@ -289,25 +300,33 @@ export const getWeeklyInsights = query({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
-    if (userId === null) {
-      return null;
-    }
 
+    // For hackathon: allow unauthenticated access to all data
     const now = Date.now();
     const startOfThisWeek = getStartOfWeek(now);
     const startOfLastWeek = startOfThisWeek - 7 * 24 * 60 * 60 * 1000;
 
-    // Get all sessions for this user
-    const allSessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_user_id", (q) => q.eq("userId", userId))
-      .collect();
+    // Get all sessions (for all users if unauthenticated)
+    let allSessions;
+    if (userId === null) {
+      allSessions = await ctx.db.query("sessions").collect();
+    } else {
+      allSessions = await ctx.db
+        .query("sessions")
+        .withIndex("by_user_id", (q) => q.eq("userId", userId))
+        .collect();
+    }
 
-    // Get all snapshots for this user - only extract needed fields
-    const allSnapshotDocs = await ctx.db
-      .query("snapshots")
-      .withIndex("by_user_id", (q) => q.eq("userId", userId))
-      .collect();
+    // Get all snapshots (for all users if unauthenticated)
+    let allSnapshotDocs;
+    if (userId === null) {
+      allSnapshotDocs = await ctx.db.query("snapshots").collect();
+    } else {
+      allSnapshotDocs = await ctx.db
+        .query("snapshots")
+        .withIndex("by_user_id", (q) => q.eq("userId", userId))
+        .collect();
+    }
 
     // Extract only needed fields (exclude imageUrl and other large fields)
     const allSnapshots = allSnapshotDocs.map((s) => ({
@@ -317,11 +336,16 @@ export const getWeeklyInsights = query({
       sessionId: s.sessionId,
     }));
 
-    // Get all camera snapshots for this user - only extract needed fields
-    const allCameraSnapshotDocs = await ctx.db
-      .query("cameraSnapshots")
-      .withIndex("by_user_id", (q) => q.eq("userId", userId))
-      .collect();
+    // Get all camera snapshots (for all users if unauthenticated)
+    let allCameraSnapshotDocs;
+    if (userId === null) {
+      allCameraSnapshotDocs = await ctx.db.query("cameraSnapshots").collect();
+    } else {
+      allCameraSnapshotDocs = await ctx.db
+        .query("cameraSnapshots")
+        .withIndex("by_user_id", (q) => q.eq("userId", userId))
+        .collect();
+    }
 
     // Extract only needed fields
     const allCameraSnapshots = allCameraSnapshotDocs.map((s) => ({
@@ -330,17 +354,24 @@ export const getWeeklyInsights = query({
     }));
 
     // Filter sessions and snapshots for this week and last week
-    const thisWeekSessions = allSessions.filter((s) => s._creationTime >= startOfThisWeek);
+    const thisWeekSessions = allSessions.filter(
+      (s) => s._creationTime >= startOfThisWeek
+    );
     const lastWeekSessions = allSessions.filter(
-      (s) => s._creationTime >= startOfLastWeek && s._creationTime < startOfThisWeek
+      (s) =>
+        s._creationTime >= startOfLastWeek && s._creationTime < startOfThisWeek
     );
 
-    const thisWeekSnapshots = allSnapshots.filter((s) => s.timestamp >= startOfThisWeek);
+    const thisWeekSnapshots = allSnapshots.filter(
+      (s) => s.timestamp >= startOfThisWeek
+    );
     const lastWeekSnapshots = allSnapshots.filter(
       (s) => s.timestamp >= startOfLastWeek && s.timestamp < startOfThisWeek
     );
 
-    const thisWeekCameraSnapshots = allCameraSnapshots.filter((s) => s.timestamp >= startOfThisWeek);
+    const thisWeekCameraSnapshots = allCameraSnapshots.filter(
+      (s) => s.timestamp >= startOfThisWeek
+    );
     const lastWeekCameraSnapshots = allCameraSnapshots.filter(
       (s) => s.timestamp >= startOfLastWeek && s.timestamp < startOfThisWeek
     );
@@ -348,7 +379,9 @@ export const getWeeklyInsights = query({
     // Calculate session durations (approximate from snapshots)
     // Use the original snapshot docs for this calculation since we need full data
     const calculateSessionDuration = (sessionId: any): number => {
-      const sessionSnapshots = allSnapshotDocs.filter((s) => s.sessionId === sessionId);
+      const sessionSnapshots = allSnapshotDocs.filter(
+        (s) => s.sessionId === sessionId
+      );
       if (sessionSnapshots.length === 0) return 0;
       const timestamps = sessionSnapshots.map((s) => s.timestamp);
       const min = Math.min(...timestamps);
@@ -363,27 +396,37 @@ export const getWeeklyInsights = query({
         // Estimate time per snapshot (assuming ~30 seconds between snapshots)
         return sum + 30000;
       }, 0);
-    const lastWeekProductiveTime = lastWeekSnapshots.filter((s) => s.isProductive).reduce((sum) => sum + 30000, 0);
+    const lastWeekProductiveTime = lastWeekSnapshots
+      .filter((s) => s.isProductive)
+      .reduce((sum) => sum + 30000, 0);
 
     // Sessions Completed
     const thisWeekSessionsCount = thisWeekSessions.length;
     const lastWeekSessionsCount = lastWeekSessions.length;
 
     // Average Session Length
-    const thisWeekSessionDurations = thisWeekSessions.map((s) => calculateSessionDuration(s._id));
+    const thisWeekSessionDurations = thisWeekSessions.map((s) =>
+      calculateSessionDuration(s._id)
+    );
     const avgSessionLength =
       thisWeekSessionDurations.length > 0
-        ? thisWeekSessionDurations.reduce((a, b) => a + b, 0) / thisWeekSessionDurations.length
+        ? thisWeekSessionDurations.reduce((a, b) => a + b, 0) /
+          thisWeekSessionDurations.length
         : 0;
 
-    const lastWeekSessionDurations = lastWeekSessions.map((s) => calculateSessionDuration(s._id));
+    const lastWeekSessionDurations = lastWeekSessions.map((s) =>
+      calculateSessionDuration(s._id)
+    );
     const lastWeekAvgSessionLength =
       lastWeekSessionDurations.length > 0
-        ? lastWeekSessionDurations.reduce((a, b) => a + b, 0) / lastWeekSessionDurations.length
+        ? lastWeekSessionDurations.reduce((a, b) => a + b, 0) /
+          lastWeekSessionDurations.length
         : 0;
 
     // Most Productive Time - return timestamps for frontend to calculate in user's timezone
-    const productiveSnapshotTimestamps = thisWeekSnapshots.filter((s) => s.isProductive).map((s) => s.timestamp);
+    const productiveSnapshotTimestamps = thisWeekSnapshots
+      .filter((s) => s.isProductive)
+      .map((s) => s.timestamp);
 
     // Current Streak (consecutive days with sessions)
     const sessionDays = new Set<number>();
@@ -406,14 +449,28 @@ export const getWeeklyInsights = query({
 
     // Weekly Goal Progress (default 15 hours = 54000000 ms)
     const weeklyGoal = 15 * 60 * 60 * 1000; // 15 hours in ms
-    const goalProgress = Math.min(100, (thisWeekProductiveTime / weeklyGoal) * 100);
+    const goalProgress = Math.min(
+      100,
+      (thisWeekProductiveTime / weeklyGoal) * 100
+    );
 
     // Distraction Alerts (camera snapshots not looking at screen)
-    const thisWeekDistractions = thisWeekCameraSnapshots.filter((s) => s.attentionState !== "looking_at_screen").length;
-    const lastWeekDistractions = lastWeekCameraSnapshots.filter((s) => s.attentionState !== "looking_at_screen").length;
+    const thisWeekDistractions = thisWeekCameraSnapshots.filter(
+      (s) => s.attentionState !== "looking_at_screen"
+    ).length;
+    const lastWeekDistractions = lastWeekCameraSnapshots.filter(
+      (s) => s.attentionState !== "looking_at_screen"
+    ).length;
 
     // AI Assistance Time (infer from activity names containing "AI", "ChatGPT", "Claude", etc.)
-    const aiKeywords = ["ai", "chatgpt", "claude", "gpt", "assistant", "copilot"];
+    const aiKeywords = [
+      "ai",
+      "chatgpt",
+      "claude",
+      "gpt",
+      "assistant",
+      "copilot",
+    ];
     const isAIActivity = (activity: string): boolean => {
       const lower = activity.toLowerCase();
       return aiKeywords.some((keyword) => lower.includes(keyword));
@@ -423,7 +480,10 @@ export const getWeeklyInsights = query({
       .filter((s) => isAIActivity(s.activity) && s.isProductive)
       .reduce((sum) => sum + 30000, 0);
     const focusWithoutAI =
-      thisWeekProductiveTime > 0 ? ((thisWeekProductiveTime - thisWeekAITime) / thisWeekProductiveTime) * 100 : 0;
+      thisWeekProductiveTime > 0
+        ? ((thisWeekProductiveTime - thisWeekAITime) / thisWeekProductiveTime) *
+          100
+        : 0;
 
     // Calculate trends
     const calculateTrend = (current: number, previous: number): string => {
@@ -445,13 +505,27 @@ export const getWeeklyInsights = query({
       focusWithoutAI: focusWithoutAI,
 
       // Trends (this week vs last week)
-      totalFocusTimeTrend: calculateTrend(thisWeekProductiveTime, lastWeekProductiveTime),
-      sessionsCompletedTrend: calculateTrend(thisWeekSessionsCount, lastWeekSessionsCount),
-      averageSessionLengthTrend: calculateTrend(avgSessionLength, lastWeekAvgSessionLength),
-      distractionAlertsTrend: calculateTrend(thisWeekDistractions, lastWeekDistractions),
+      totalFocusTimeTrend: calculateTrend(
+        thisWeekProductiveTime,
+        lastWeekProductiveTime
+      ),
+      sessionsCompletedTrend: calculateTrend(
+        thisWeekSessionsCount,
+        lastWeekSessionsCount
+      ),
+      averageSessionLengthTrend: calculateTrend(
+        avgSessionLength,
+        lastWeekAvgSessionLength
+      ),
+      distractionAlertsTrend: calculateTrend(
+        thisWeekDistractions,
+        lastWeekDistractions
+      ),
       aiAssistanceTimeTrend: calculateTrend(
         thisWeekAITime,
-        lastWeekSnapshots.filter((s) => isAIActivity(s.activity) && s.isProductive).reduce((sum) => sum + 30000, 0)
+        lastWeekSnapshots
+          .filter((s) => isAIActivity(s.activity) && s.isProductive)
+          .reduce((sum) => sum + 30000, 0)
       ),
     };
   },
