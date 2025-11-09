@@ -11,7 +11,7 @@
   "scripts": {
     "dev": "concurrently --names \"convex,frontend,backend\" --prefix-colors \"blue,green,yellow\" \"npx convex dev\" \"npm run dev --workspace=dillydally-frontend\" \"npm run dev --workspace=dillydally-express\"",
     "build": "npm run codegen && sh -c '[ -n \"$VERCEL\" ] && npm run install-rollup || true' && turbo build && npm run postbuild",
-    "install-rollup": "npm install --workspace=dillydally-frontend --include=optional @rollup/rollup-linux-x64-gnu || true",
+    "install-rollup": "npm install --workspace=dillydally-frontend --include=optional @rollup/rollup-linux-x64-gnu @esbuild/linux-x64 || true",
     "postbuild": "if [ -d dillydally-frontend/dist ]; then rm -rf dist && cp -r dillydally-frontend/dist dist && echo '✓ Copied dist to root'; else echo '✗ Build output not found' && exit 1; fi",
     "codegen": "npx convex codegen",
     "start": "concurrently --names \"convex,frontend,backend\" --prefix-colors \"blue,green,yellow\" \"npx convex dev\" \"npm run preview --workspace=dillydally-frontend\" \"npm run start --workspace=dillydally-express\"",
@@ -22,6 +22,8 @@
     "turbo": "^2.6.0"
   },
   "dependencies": {
+    "@auth/core": "^0.37.0",
+    "@convex-dev/auth": "^0.0.90",
     "convex": "^1.17.2"
   }
 }

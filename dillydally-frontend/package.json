@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "sh -c '[ -n \"$VERCEL\" ] && npm install --include=optional @rollup/rollup-linux-x64-gnu || true' && tsc -b && vite build",
+    "build": "sh -c '[ -n \"$VERCEL\" ] && npm install --include=optional @rollup/rollup-linux-x64-gnu @esbuild/linux-x64 || true' && tsc -b && vite build",
     "check-types": "tsc --noEmit",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -13,14 +13,15 @@
   },
   "dependencies": {
     "@mediapipe/face_mesh": "^0.4.1633559619",
-    "@rollup/rollup-linux-x64-gnu": "^4.53.1",
     "@tensorflow-models/face-landmarks-detection": "^1.0.6",
     "@tensorflow/tfjs": "^4.22.0",
     "@tensorflow/tfjs-backend-webgl": "^4.22.0",
     "convex": "^1.28.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "react-webcam": "^7.2.0"
+    "react-webcam": "^7.2.0",
+    "@auth/core": "^0.37.0",
+    "@convex-dev/auth": "^0.0.90"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
@@ -37,6 +38,7 @@
     "vite": "^7.1.7"
   },
   "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.53.1",
     "@rollup/rollup-win32-x64-msvc": "^4.53.1"
   }
 }

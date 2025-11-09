@@ -3,7 +3,7 @@ import cors from "cors";
 import multer from "multer";
 import { ConvexHttpClient } from "convex/browser";
 // Try to import from local copy first, fallback to relative path for development
-import { api } from "./lib/convex-generated/api.js";
+import { api } from "./lib/api";
 import * as dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
@@ -54,25 +54,23 @@ app.get("/", (req, res) => {
   });
 });
 
-// Example endpoint that queries Convex
-app.get("/api/tasks", async (req, res) => {
-  try {
-    const tasks = await convexClient.query(api.tasks.get, {});
-    res.json({ success: true, tasks });
-  } catch (error) {
-    console.error("Error fetching tasks:", error);
-    res.status(500).json({
-      success: false,
-      error: "Failed to fetch tasks from Convex",
-    });
-  }
-});
-
 // Screenshot upload endpoint
 app.post("/api/screenshots", upload.single("image"), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No image file provided" });
   }
+
+  const userId = req.body.userId;
+  if (!userId) {
+    return res.status(400).json({ error: "User ID is required" });
+  }
+
+  const sessionId = req.body.sessionId;
+  if (!sessionId) {
+    return res.status(400).json({ error: "Session ID is required" });
+  }
+
+  console.log(`[Screenshot] User ID: ${userId}, Session ID: ${sessionId}`);
 
   try {
     // Convert buffer to base64 (for future OpenAI Vision API)
@@ -80,6 +78,32 @@ app.post("/api/screenshots", upload.single("image"), async (req, res) => {
     const timestamp = req.body.ts || Date.now();
 
     console.log(`[Screenshot ${timestamp}] base64 length: ${base64.length}, prefix: ${base64.slice(0, 100)}`);
+
+    // Get existing activities for this session
+    let existingActivities: string[] = [];
+    try {
+      existingActivities = await convexClient.query(api.functions.getSessionActivities, {
+        sessionId: sessionId as any,
+      });
+      console.log(`[Session ${sessionId}] Found ${existingActivities.length} existing activities:`, existingActivities);
+    } catch (queryError) {
+      console.error("Error fetching session activities:", queryError);
+      // Continue without existing activities if query fails
+    }
+
+    // Build prompt with existing activities context
+    let promptText = `Evaluate what the user is doing in the image to provide a binary classification of whether the user is doing something productive or not. Use your observations to populate the following json schema:
+              {
+                isProductive: bool,
+                summary: string,
+                current_tab: string | null // if not inside of a browser,
+                activity: string // 1-2 word phrase max ex: YouTube, Instagram, Essay Writing
+              }`;
+
+    if (existingActivities.length > 0) {
+      promptText += `\n\nExisting activities for this session: ${existingActivities.join(", ")}. Please try to classify the image into one of these existing activity categories if it reasonably fits. If the image doesn't match any existing category, it's okay to create a new activity category.`;
+    }
+
     // mismatch between typedef and actual implementation
     const response = await (client.responses.create as any)({
       model: "gpt-4.1-mini",
@@ -89,14 +113,7 @@ app.post("/api/screenshots", upload.single("image"), async (req, res) => {
           content: [
             {
               type: "input_text",
-              text: `Evaluate what the user is doing in the image to provide a binary classification of whether the user is doing something productive or not. Use your observations to populate the following json schema:
-              {
-                isProductive: bool,
-                summary: string,
-                current_tab: string | null // if not inside of a browser,
-                activity: string // 1-2 word phrase max ex: YouTube, Instagram, Essay Writing
-              }
-              `,
+              text: promptText,
             },
             {
               type: "input_image",
@@ -107,6 +124,38 @@ app.post("/api/screenshots", upload.single("image"), async (req, res) => {
       ],
     });
     console.log(response.output_text);
+
+    // Parse the OpenAI response JSON
+    let snapshotData;
+    try {
+      snapshotData = JSON.parse(response.output_text);
+    } catch (parseError) {
+      console.error("Error parsing OpenAI response:", parseError);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to parse OpenAI response",
+      });
+    }
+
+    // Create snapshot in Convex
+    try {
+      await convexClient.mutation(api.functions.createSnapshot, {
+        userId: userId as any,
+        sessionId: sessionId as any,
+        timestamp: Number(timestamp),
+        isProductive: snapshotData.isProductive,
+        summary: snapshotData.summary,
+        activity: snapshotData.activity,
+        currentTab: snapshotData.current_tab || "",
+      });
+      console.log(`[Snapshot] Created snapshot for session ${sessionId}`);
+    } catch (snapshotError) {
+      console.error("Error creating snapshot:", snapshotError);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to create snapshot in Convex",
+      });
+    }
 
     // Return 204 No Content for successful upload
     res.status(204).end();

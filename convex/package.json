@@ -1,5 +1,9 @@
 {
   "type": "module",
+  "dependencies": {
+    "@auth/core": "^0.37.0",
+    "@convex-dev/auth": "^0.0.90"
+  },
   "devDependencies": {
     "turbo": "^2.6.0"
   }

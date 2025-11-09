@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../lib/convexApi";
 
 interface SessionCaptureProps {
   intervalMs?: number;
@@ -13,6 +15,9 @@ export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWi
   const [error, setError] = useState<string | null>(null);
   const [captureCount, setCaptureCount] = useState(0);
 
+  const user = useQuery(api.functions.currentUser);
+  const startSession = useMutation(api.functions.startSession);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -22,6 +27,7 @@ export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWi
   const abortControllerRef = useRef<AbortController | null>(null);
   const fallbackIntervalRef = useRef<number | null>(null);
   const isRecordingRef = useRef<boolean>(false);
+  const sessionIdRef = useRef<string | null>(null);
 
   const apiBase = import.meta.env.VITE_EXPRESS_URL;
 
@@ -72,6 +78,13 @@ export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWi
           abortControllerRef.current = controller;
           const timeoutId = setTimeout(() => controller.abort(), 10000);
 
+          if (user) {
+            formData.append("userId", user._id);
+          }
+          if (sessionIdRef.current) {
+            formData.append("sessionId", sessionIdRef.current);
+          }
+
           const response = await fetch(`${apiBase}/api/screenshots`, {
             method: "POST",
             body: formData,
@@ -109,6 +122,10 @@ export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWi
       console.log('📸 SessionCapture: startCapture() called');
       setError(null);
       setCaptureCount(0);
+
+      // Start a new session in the database
+      const newSessionId = await startSession();
+      sessionIdRef.current = newSessionId;
 
       // Request screen capture
       console.log('📸 SessionCapture: Requesting screen share permission...');
@@ -220,6 +237,9 @@ export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWi
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
+
+    // Clear session ID
+    sessionIdRef.current = null;
 
     uploadInProgressRef.current = false;
   };
