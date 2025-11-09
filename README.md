@@ -1,5 +1,5 @@
 # DillyDally  
-### **See your focus. Improve your focus.** 🧠✨
+### **See your focus. Improve your focus.**
 
 DillyDally is a next-generation, AI-powered Pomodoro system that doesn’t just track **how long** you work — it helps you understand **how well** you were able to focus. Traditional productivity timers assume that time spent = progress. But in a world of constant interruptions, simply measuring time is no longer enough.
 
@@ -11,7 +11,7 @@ DillyDally helps you develop it.
 
 ---
 
-## 🎯 The Problem
+## The Problem
 Most Pomodoro timers only record **time spent**, not **focus quality**.
 
 Which means you can complete 4 sessions and still feel like:
@@ -23,7 +23,7 @@ Which means you can complete 4 sessions and still feel like:
 
 ---
 
-## 💡 Our Solution
+## Our Solution
 DillyDally adds **intelligent reflection** to the Pomodoro method:
 
 1. Start a session.
@@ -39,7 +39,7 @@ This creates a **feedback loop**, turning ordinary Pomodoros into skill-building
 
 ---
 
-## 🌀 How It Works
+## How It Works
 
 DillyDally transforms each focus session into a **feedback loop** that surfaces your attention behavior.
 
@@ -89,7 +89,7 @@ The system never shames or scores you — it reflects your **actual attention be
 
 ---
 
-## 🏆 What Makes DillyDally Different
+## What Makes DillyDally Different
 
 | Traditional Productivity Tools | **DillyDally** |
 |---|---|
@@ -103,7 +103,7 @@ DillyDally is not a timer —
 
 ---
 
-## 🧱 Monorepo Architecture
+## Monorepo Architecture
 
 ```
 DillyDally/
@@ -136,7 +136,7 @@ DillyDally/
 
 ---
 
-## 🚀 Features
+## Features
 
 - AI-generated **Focus Reports**
 - Live Pomodoro-style session timer
@@ -148,7 +148,7 @@ DillyDally/
 
 ---
 
-## 🔧 Setup Instructions
+## Setup Instructions
 
 ### 1. Install Dependencies
 ```bash
@@ -190,7 +190,7 @@ npm run dev --workspace=dillydally-express
 
 ---
 
-## 🧪 API Endpoints (Express)
+## API Endpoints (Express)
 
 ### GET `/`
 ```json
@@ -213,7 +213,7 @@ npm run dev --workspace=dillydally-express
 
 ---
 
-## 📦 Convex Functions
+## Convex Functions
 
 ### Schema (`schema.ts`)
 ```ts
@@ -228,7 +228,7 @@ Returns all tasks.
 
 ---
 
-## 🧭 Development Workflow
+## Development Workflow
 
 | Task | Work In |
 |------|--------|
@@ -240,7 +240,7 @@ Convex automatically syncs & regenerates types live.
 
 ---
 
-## 🛠 Troubleshooting
+## Troubleshooting
 
 | Issue | Fix |
 |------|-----|
@@ -251,7 +251,7 @@ Convex automatically syncs & regenerates types live.
 
 ---
 
-## 🏁 Production Deployment
+## Production Deployment
 
 ### Frontend
 ```bash
