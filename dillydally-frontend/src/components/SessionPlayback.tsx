@@ -518,15 +518,17 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
                     </span>
                     <span className="activity-duration">{formatDuration(region.duration)}</span>
                   </div>
-                  <div className={`activity-snapshots ${expandedActivities.has(index) ? "expanded" : ""}`}>
-                    {(expandedActivities.has(index) ? region.snapshots : region.snapshots.slice(0, 3)).map(
-                      (snapshot, snapIndex) => (
-                        <div key={snapIndex} className="snapshot-preview">
-                          <div className="snapshot-time">{formatTime(snapshot.timestamp)}</div>
-                          <div className="snapshot-summary">{snapshot.summary}</div>
-                        </div>
-                      )
-                    )}
+                  <div className="activity-snapshots-wrapper">
+                    <div className={`activity-snapshots ${expandedActivities.has(index) ? "expanded" : ""}`}>
+                      {(expandedActivities.has(index) ? region.snapshots : region.snapshots.slice(0, 3)).map(
+                        (snapshot, snapIndex) => (
+                          <div key={snapIndex} className="snapshot-preview">
+                            <div className="snapshot-time">{formatTime(snapshot.timestamp)}</div>
+                            <div className="snapshot-summary">{snapshot.summary}</div>
+                          </div>
+                        )
+                      )}
+                    </div>
                     {region.snapshots.length > 3 && (
                       <button
                         className="snapshot-more"
