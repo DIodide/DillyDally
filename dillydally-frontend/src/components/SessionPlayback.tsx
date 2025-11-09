@@ -1,5 +1,5 @@
 import { useQuery } from "convex/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { api } from "../lib/convexApi";
 import type { Id } from "@convex/_generated/dataModel";
 import "../styles/SessionPlayback.css";
@@ -49,6 +49,25 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
     summary: string;
     activity?: string;
   } | null>(null);
+  const [scrollBackTarget, setScrollBackTarget] = useState<HTMLElement | null>(null);
+  const [showScrollBackButton, setShowScrollBackButton] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Initialize screenshot to first snapshot with an image
+  useEffect(() => {
+    if (snapshots && snapshots.length > 0 && !selectedScreenshot) {
+      const sortedSnapshots = [...snapshots].sort((a, b) => a.timestamp - b.timestamp);
+      const firstSnapshotWithImage = sortedSnapshots.find((s) => s.imageBase64);
+      if (firstSnapshotWithImage) {
+        setSelectedScreenshot({
+          imageBase64: firstSnapshotWithImage.imageBase64!,
+          timestamp: firstSnapshotWithImage.timestamp,
+          summary: firstSnapshotWithImage.summary,
+          activity: firstSnapshotWithImage.activity,
+        });
+      }
+    }
+  }, [snapshots, selectedScreenshot]);
 
   // Handle clicking outside to dismiss popup
   useEffect(() => {
@@ -65,6 +84,24 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
       };
     }
   }, [clickedRegion]);
+
+  // Scroll to top when screenshot is selected and show scroll back button
+  useEffect(() => {
+    if (selectedScreenshot && scrollBackTarget) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      // Show button after scrolling to top
+      setTimeout(() => {
+        setShowScrollBackButton(true);
+      }, 500); // Wait for scroll animation to complete
+    }
+  }, [selectedScreenshot, scrollBackTarget]);
+
+  // Hide button when scroll back target is cleared
+  useEffect(() => {
+    if (!scrollBackTarget) {
+      setShowScrollBackButton(false);
+    }
+  }, [scrollBackTarget]);
 
   if (!sessionId || snapshots === undefined || cameraSnapshots === undefined) {
     return null;
@@ -312,8 +349,16 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
   const focusPercentage = sessionDuration > 0 ? (focusedTime / sessionDuration) * 100 : 0;
   const distractionCount = attentionTimelineRegions.filter((r) => r.attentionState === "away").length;
 
+  const handleScrollBack = () => {
+    if (scrollBackTarget) {
+      scrollBackTarget.scrollIntoView({ behavior: "smooth", block: "center" });
+      setScrollBackTarget(null);
+      setShowScrollBackButton(false);
+    }
+  };
+
   return (
-    <div className="session-playback-container">
+    <div className="session-playback-container" ref={containerRef}>
       <div className="session-playback-header">
         <h2 className="session-playback-title">Session Play-by-Play</h2>
         <button className="session-playback-dismiss" onClick={onDismiss}>
@@ -403,10 +448,12 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
                 const leftPercentage =
                   sessionDuration > 0 ? ((region.startTime - sessionStartTime) / sessionDuration) * 100 : 0;
 
-                const handleTimelineClick = () => {
+                const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
                   // Find the first snapshot with an image for this region
                   const snapshotWithImage = region.snapshots.find((s) => s.imageBase64);
                   if (snapshotWithImage) {
+                    // Store the clicked element for scroll back
+                    setScrollBackTarget(e.currentTarget);
                     setSelectedScreenshot({
                       imageBase64: snapshotWithImage.imageBase64!,
                       timestamp: snapshotWithImage.timestamp,
@@ -425,7 +472,7 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
                       left: `${leftPercentage}%`,
                       cursor: region.snapshots.some((s) => s.imageBase64) ? "pointer" : "default",
                     }}
-                    onClick={region.snapshots.some((s) => s.imageBase64) ? handleTimelineClick : undefined}>
+                    onClick={region.snapshots.some((s) => s.imageBase64) ? (e) => handleTimelineClick(e) : undefined}>
                     <div className="timeline-region-content">
                       <div className="timeline-region-label">{region.activity}</div>
                       <div className="timeline-region-duration">{formatDuration(region.duration)}</div>
@@ -574,10 +621,12 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
                 // Find the original index in timelineRegions for expansion tracking
                 const originalIndex = timelineRegions.findIndex((r) => r === region);
 
-                const handleActivityClick = () => {
+                const handleActivityClick = (e: React.MouseEvent<HTMLDivElement>) => {
                   // Find the first snapshot with an image for this activity
                   const snapshotWithImage = region.snapshots.find((s) => s.imageBase64);
                   if (snapshotWithImage) {
+                    // Store the clicked element for scroll back
+                    setScrollBackTarget(e.currentTarget);
                     setSelectedScreenshot({
                       imageBase64: snapshotWithImage.imageBase64!,
                       timestamp: snapshotWithImage.timestamp,
@@ -591,7 +640,7 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
                   <div
                     key={originalIndex}
                     className={`activity-item ${region.isProductive ? "productive" : "not-productive"}`}
-                    onClick={region.snapshots.some((s) => s.imageBase64) ? handleActivityClick : undefined}
+                    onClick={region.snapshots.some((s) => s.imageBase64) ? (e) => handleActivityClick(e) : undefined}
                     style={{ cursor: region.snapshots.some((s) => s.imageBase64) ? "pointer" : "default" }}>
                     <div className="activity-header">
                       <div className="activity-name">{region.activity}</div>
@@ -619,7 +668,10 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
                       {region.snapshots.length > 3 && (
                         <button
                           className="snapshot-more"
-                          onClick={() => toggleActivityExpansion(originalIndex)}
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent triggering parent activity click
+                            toggleActivityExpansion(originalIndex);
+                          }}
                           type="button">
                           {expandedActivities.has(originalIndex)
                             ? `Show less`
@@ -633,6 +685,19 @@ export default function SessionPlayback({ sessionId, onDismiss }: SessionPlaybac
             </div>
           </div>
         </>
+      )}
+
+      {/* Floating Scroll Back Button */}
+      {showScrollBackButton && scrollBackTarget && (
+        <button
+          className="session-playback-scroll-back-btn"
+          onClick={handleScrollBack}
+          aria-label="Scroll back to clicked item">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 5v14M5 12l7 7 7-7" />
+          </svg>
+          <span>Back to item</span>
+        </button>
       )}
     </div>
   );

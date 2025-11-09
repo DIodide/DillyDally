@@ -610,3 +610,68 @@
   }
 }
 
+/* Floating Scroll Back Button */
+.session-playback-scroll-back-btn {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  transition: all 0.3s ease;
+  animation: slideUpFadeIn 0.3s ease-out;
+}
+
+.session-playback-scroll-back-btn:hover {
+  background-color: #138496;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+.session-playback-scroll-back-btn:active {
+  transform: translateY(0);
+}
+
+.session-playback-scroll-back-btn svg {
+  flex-shrink: 0;
+}
+
+@keyframes slideUpFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .session-playback-scroll-back-btn {
+    bottom: 1.5rem;
+    right: 1.5rem;
+    padding: 0.625rem 1rem;
+    font-size: 0.8rem;
+  }
+
+  .session-playback-scroll-back-btn span {
+    display: none;
+  }
+
+  .session-playback-scroll-back-btn {
+    padding: 0.75rem;
+    border-radius: 50%;
+  }
+}
+
