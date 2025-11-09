@@ -21,46 +21,25 @@ export const FaceTracking: React.FC<FaceTrackingProps> = ({ onAttentionChange, i
   const [loaded, setLoaded] = useState(false);
   const initializingRef = useRef(false);
   const cleanupRef = useRef<(() => void) | null>(null);
+  const detectorReadyRef = useRef(false); // Track if detector is initialized and ready
+  const isTrackingRef = useRef(isTracking); // Track current isTracking value
+
+  // Keep isTrackingRef in sync with prop
+  useEffect(() => {
+    isTrackingRef.current = isTracking;
+  }, [isTracking]);
 
   useEffect(() => {
-    if (!isTracking) {
-      setLoaded(false);
-      initializingRef.current = false;
-
-      // Cleanup detector when tracking stops
-      if (cleanupRef.current) {
-        cleanupRef.current();
-        cleanupRef.current = null;
-      }
-
-      // Stop webcam stream
-      const video = videoRef.current?.video;
-      if (video && video.srcObject) {
-        const stream = video.srcObject as MediaStream;
-        stream.getTracks().forEach((track) => track.stop());
-        video.srcObject = null;
-      }
-    }
-
     // Cleanup on unmount
     return () => {
       if (cleanupRef.current) {
         cleanupRef.current();
         cleanupRef.current = null;
       }
-
-      // Stop webcam stream on unmount
-      const video = videoRef.current?.video;
-      if (video && video.srcObject) {
-        const stream = video.srcObject as MediaStream;
-        stream.getTracks().forEach((track) => track.stop());
-        video.srcObject = null;
-      }
     };
-  }, [isTracking]);
+  }, []);
 
   const handleVideoLoad = async () => {
-    if (!isTracking) return;
     if (loaded || initializingRef.current) return;
 
     const video = videoRef.current?.video;
@@ -82,32 +61,35 @@ export const FaceTracking: React.FC<FaceTrackingProps> = ({ onAttentionChange, i
       return;
     }
 
-    console.log("✅ Starting face detector with video dimensions:", video.videoWidth, "x", video.videoHeight);
-    console.log("Video ready state:", video.readyState, "Playing:", !video.paused);
+    console.log("✅ Preloading face detector with video dimensions:", video.videoWidth, "x", video.videoHeight);
     initializingRef.current = true;
 
     try {
-      const cleanup = await runDetector(video, canvasRef.current, (result: AttentionState) => {
-        if (result) {
-          // Notify parent component of attention changes
-          if (onAttentionChange) {
-            onAttentionChange(result);
+      // Initialize detector - it will check isTrackingRef before processing
+      const cleanup = await runDetector(
+        video,
+        canvasRef.current,
+        (result: AttentionState) => {
+          // Only process results when actively tracking
+          if (isTrackingRef.current && result) {
+            // Notify parent component of attention changes
+            if (onAttentionChange) {
+              onAttentionChange(result);
+            }
           }
-        }
-      });
+        },
+        () => isTrackingRef.current // Pass isTracking getter to detector
+      );
 
       // Store cleanup function
       cleanupRef.current = cleanup;
       setLoaded(true);
+      detectorReadyRef.current = true;
     } catch (error) {
-      console.error("Error starting face detector:", error);
+      console.error("Error initializing face detector:", error);
       initializingRef.current = false;
     }
   };
-
-  if (!isTracking) {
-    return null;
-  }
 
   return (
     <div

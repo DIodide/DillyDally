@@ -250,7 +250,7 @@ function App() {
           />
         </div>
 
-        {/* Face Tracking Component - hidden but active when session is running and not paused */}
+        {/* Face Tracking Component - preloaded on page visit, only tracks when session is active and not paused */}
         <FaceTracking isTracking={isSessionActive && !isPaused} onAttentionChange={handleAttentionChange} />
       </Authenticated>
       <Unauthenticated>
