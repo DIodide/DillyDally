@@ -27,7 +27,8 @@
     /* Paths */
     "baseUrl": ".",
     "paths": {
-      "@convex/*": ["../convex/*"]
+      "@convex/*": ["../convex/*"],
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src", "../convex"]

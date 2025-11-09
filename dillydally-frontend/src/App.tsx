@@ -3,17 +3,14 @@ import { useState, useRef } from "react";
 import SessionCapture from "./components/SessionCapture";
 import FaceTracking from "./components/FaceTracking";
 import Timer from "./components/Timer";
-import StatsCard from "./components/StatsCard";
-import Insights from "./components/Insights";
+import StatCard from "./components/StatCard";
+import InsightCard from "./components/InsightCard";
+import Logo from "./components/Logo";
 import type { AttentionState } from "./utils/faceTracking/classify";
-import logoImage from "./assets/logo.svg";
+import { Clock, Coffee, AlertTriangle, Settings } from "lucide-react";
 
 function App() {
   const [isSessionActive, setIsSessionActive] = useState(false);
-  const [timesFocused] = useState(0);
-  const [breaks] = useState(0);
-  const [distractionAlerts, setDistractionAlerts] = useState(0);
-  
   const lastLogTimeRef = useRef(0);
   const lastStateRef = useRef("");
 
@@ -21,11 +18,6 @@ function App() {
     const now = Date.now();
     const timeSinceLastLog = now - lastLogTimeRef.current;
     const stateChanged = state.state !== lastStateRef.current;
-    
-    // Count distraction alerts when user looks away
-    if (stateChanged && state.state !== "looking_at_screen" && state.state !== "no_face") {
-      setDistractionAlerts(prev => prev + 1);
-    }
     
     // Only log if 1 second has passed OR if the state has changed
     if (timeSinceLastLog >= 1000 || stateChanged) {
@@ -35,86 +27,149 @@ function App() {
     }
   };
 
-  const handleStart = () => {
-    setIsSessionActive(true);
-  };
-
-  const handleStop = () => {
-    setIsSessionActive(false);
-  };
-
-  const handleReset = () => {
-    // Reset timer logic handled in Timer component
-  };
-
-  const formatTime = (minutes: number) => {
-    if (minutes < 60) {
-      return `${minutes} m`;
-    }
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return mins > 0 ? `${hours} h ${mins} m` : `${hours} h`;
+  const handleTimerSessionChange = (isActive: boolean) => {
+    setIsSessionActive(isActive);
   };
 
   return (
-    <div className="App">
-      {/* Header */}
-      <header className="app-header">
-        <div className="logo-container">
-          <img src={logoImage} alt="DillyDally" className="app-logo" />
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header with Logo and Settings */}
+        <div className="flex justify-between items-center mb-8">
+          <Logo />
+          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <Settings className="w-6 h-6 text-gray-600" />
+          </button>
         </div>
-        <button className="settings-btn" aria-label="Settings">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="3" />
-            <path d="M12 1v6m0 6v6m9-9h-6m-6 0H3" />
-            <path d="M19.07 4.93l-4.24 4.24m-5.66 5.66L4.93 19.07m14.14 0l-4.24-4.24m-5.66-5.66L4.93 4.93" />
-          </svg>
-        </button>
-      </header>
 
-      {/* Timer Section */}
-      <Timer
-        isActive={isSessionActive}
-        onStart={handleStart}
-        onStop={handleStop}
-        onReset={handleReset}
-      />
+        {/* Timer Section */}
+        <div className="mb-12">
+          <Timer onSessionChange={handleTimerSessionChange} />
+        </div>
 
-      {/* Stats Cards */}
-      <div className="stats-grid">
-        <StatsCard
-          icon="🕐"
-          title="Time Focused Today"
-          value={formatTime(timesFocused)}
-          iconBgColor="#d4f1f4"
-        />
-        <StatsCard
-          icon="☕"
-          title="Breaks"
-          value={breaks.toString()}
-          iconBgColor="#d4f1f4"
-        />
-        <StatsCard
-          icon="⚠️"
-          title="Distraction Alerts"
-          value={distractionAlerts.toString()}
-          iconBgColor="#ffe5e5"
-        />
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <StatCard
+            icon={<Clock className="w-6 h-6 text-[#17a2b8]" />}
+            title="Time Focused Today"
+            value="0 m"
+            iconBg="bg-blue-100"
+          />
+          <StatCard
+            icon={<Coffee className="w-6 h-6 text-[#17a2b8]" />}
+            title="Breaks"
+            value="0"
+            iconBg="bg-blue-100"
+          />
+          <StatCard
+            icon={<AlertTriangle className="w-6 h-6 text-[#17a2b8]" />}
+            title="Distraction Alerts"
+            value="0"
+            iconBg="bg-blue-100"
+          />
+        </div>
+
+        {/* Insights Section */}
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-[#1e3a5f] mb-6">Insights</h2>
+
+          {/* This Week */}
+          <div className="mb-8">
+            <h3 className="text-xl font-semibold text-[#1e3a5f] mb-4">This Week</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InsightCard
+                title="Total Focus Time"
+                description="Time spent in focused work sessions"
+                value="12.5 hrs"
+                trend="↗ +15%"
+                trendColor="text-green-600"
+              />
+              <InsightCard
+                title="Sessions Completed"
+                description="Number of pomodoro sessions finished"
+                value="24"
+                trend="↗ +8%"
+                trendColor="text-green-600"
+              />
+              <InsightCard
+                title="Break Completion Rate"
+                description="Percentage of scheduled breaks taken"
+                value="92%"
+                trend="↗ +5%"
+                trendColor="text-green-600"
+              />
+              <InsightCard
+                title="Average Session Length"
+                description="Mean duration of focus sessions"
+                value="25 min"
+                trend="— 0%"
+                trendColor="text-gray-600"
+              />
+            </div>
+          </div>
+
+          {/* Productivity Patterns */}
+          <div className="mb-8">
+            <h3 className="text-xl font-semibold text-[#1e3a5f] mb-4">Productivity Patterns</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <InsightCard
+                title="Most Productive Time"
+                description="Your peak focus hour based on completed sessions"
+                value="10-11 AM"
+              />
+              <InsightCard
+                title="Current Streak"
+                description="Consecutive days with at least one focus session"
+                value="7 days"
+                trend="↗ +12%"
+                trendColor="text-green-600"
+              />
+              <InsightCard
+                title="Weekly Goal Progress"
+                description="Progress toward 15 hours of focus time"
+                value="87%"
+                trend="↗ +23%"
+                trendColor="text-green-600"
+              />
+            </div>
+          </div>
+
+          {/* AI Insights */}
+          <div>
+            <h3 className="text-xl font-semibold text-[#1e3a5f] mb-4">AI Insights</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <InsightCard
+                title="AI Assistance Time"
+                description="Time using AI tools during focus sessions"
+                value="3.2 hrs"
+                trend="↘ -5%"
+                trendColor="text-red-600"
+              />
+              <InsightCard
+                title="Focus Without AI"
+                description="Percentage of deep work done independently"
+                value="74%"
+              />
+              <InsightCard
+                title="Distraction Alerts"
+                description="Times you switched away from focus tasks"
+                value="8"
+                trend="↘ -20%"
+                trendColor="text-red-600"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Hidden Session Capture and Face Tracking */}
+        <div className="hidden">
+          <SessionCapture onSessionChange={() => {}} />
+          <FaceTracking 
+            isTracking={isSessionActive}
+            onAttentionChange={handleAttentionChange}
+          />
+        </div>
       </div>
-
-      {/* Insights Section */}
-      <Insights />
-
-      {/* Hidden Session Capture Component - controls screenshot capture */}
-      <div style={{ display: "none" }}>
-        <SessionCapture onSessionChange={setIsSessionActive} />
-      </div>
-      
-      {/* Face Tracking Component - hidden but active when session is running */}
-      <FaceTracking 
-        isTracking={isSessionActive}
-        onAttentionChange={handleAttentionChange}
-      />
     </div>
   );
 }
