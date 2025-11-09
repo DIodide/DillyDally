@@ -1,0 +1,60 @@
+.webcam-display-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+}
+
+.webcam-video-wrapper {
+  position: relative;
+  width: 320px;
+  height: 240px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+}
+
+.webcam-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.webcam-placeholder {
+  width: 320px;
+  height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+  border-radius: 12px;
+  color: #666;
+}
+
+.webcam-placeholder p {
+  margin: 0.25rem 0;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.webcam-hint {
+  font-size: 0.875rem !important;
+  color: #999 !important;
+  font-weight: 400 !important;
+}
+
+.webcam-status {
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: center;
+  transition: color 0.3s ease;
+}
+
