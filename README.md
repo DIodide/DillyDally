@@ -316,22 +316,6 @@ npx convex deploy
 
 ---
 
-## What Makes DillyDally Different
-
-| Traditional Productivity Tools | **DillyDally** |
-|---|---|
-| Only track time | Measures *quality* of focus |
-| No awareness of distraction patterns | Detects attention drift + context triggers |
-| No personalized learning | Generates supportive AI reflections & guidance |
-| Treat focus as fixed | Treats focus as a *skill that improves* |
-
-DillyDally is not a timer —  
-**it's a coach for your attention.**
-
----
-
-### **See your focus. Improve your focus.**
-
 ```
 Built with intention, curiosity, and deep work energy
 HackPrinceton 2025
