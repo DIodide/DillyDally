@@ -10,7 +10,13 @@ interface SessionCaptureProps {
   onSessionChange?: (isActive: boolean) => void;
 }
 
-export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWidth = 1280, isActive = false, onSessionChange }: SessionCaptureProps) {
+export default function SessionCapture({
+  intervalMs = 3000,
+  quality = 0.6,
+  maxWidth = 1280,
+  isActive = false,
+  onSessionChange,
+}: SessionCaptureProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [captureCount, setCaptureCount] = useState(0);
@@ -32,7 +38,11 @@ export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWi
   const apiBase = import.meta.env.VITE_EXPRESS_URL;
 
   const captureAndUpload = async () => {
-    if (!videoRef.current || !canvasRef.current || uploadInProgressRef.current) {
+    if (
+      !videoRef.current ||
+      !canvasRef.current ||
+      uploadInProgressRef.current
+    ) {
       return;
     }
 
@@ -82,7 +92,17 @@ export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWi
             formData.append("userId", user._id);
           }
           if (sessionIdRef.current) {
+            console.log(
+              "📸 SessionCapture: Sending sessionId:",
+              sessionIdRef.current
+            );
             formData.append("sessionId", sessionIdRef.current);
+          } else {
+            console.warn(
+              "📸 SessionCapture: No sessionId available, skipping upload"
+            );
+            uploadInProgressRef.current = false;
+            return;
           }
 
           const response = await fetch(`${apiBase}/api/screenshots`, {
@@ -99,7 +119,9 @@ export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWi
 
           setCaptureCount((prev) => {
             const newCount = prev + 1;
-            console.log(`📸 SessionCapture: Screenshot ${newCount} uploaded successfully`);
+            console.log(
+              `📸 SessionCapture: Screenshot ${newCount} uploaded successfully`
+            );
             return newCount;
           });
         } catch (err: any) {
@@ -119,20 +141,24 @@ export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWi
 
   const startCapture = async () => {
     try {
-      console.log('📸 SessionCapture: startCapture() called');
+      console.log("📸 SessionCapture: startCapture() called");
       setError(null);
       setCaptureCount(0);
 
       // Start a new session in the database
       const newSessionId = await startSession();
+      if (!newSessionId) {
+        throw new Error("Failed to create session - no session ID returned");
+      }
+      console.log("📸 SessionCapture: Created session with ID:", newSessionId);
       sessionIdRef.current = newSessionId;
 
       // Request screen capture
-      console.log('📸 SessionCapture: Requesting screen share permission...');
+      console.log("📸 SessionCapture: Requesting screen share permission...");
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: true,
       });
-      console.log('📸 SessionCapture: Screen share permission granted');
+      console.log("📸 SessionCapture: Screen share permission granted");
 
       streamRef.current = stream;
 
@@ -145,14 +171,17 @@ export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWi
       // Set up frame callback
       isRecordingRef.current = true;
       setIsRecording(true);
-      console.log('📸 SessionCapture: Recording started successfully');
-      
+      console.log("📸 SessionCapture: Recording started successfully");
+
       // Notify parent that session has started
       if (onSessionChange) {
         onSessionChange(true);
       }
 
-      if (videoRef.current && "requestVideoFrameCallback" in HTMLVideoElement.prototype) {
+      if (
+        videoRef.current &&
+        "requestVideoFrameCallback" in HTMLVideoElement.prototype
+      ) {
         const callback = (now: number) => {
           if (!isRecordingRef.current) return;
 
@@ -163,11 +192,13 @@ export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWi
           }
 
           if (videoRef.current && isRecordingRef.current) {
-            frameCallbackIdRef.current = videoRef.current.requestVideoFrameCallback(callback);
+            frameCallbackIdRef.current =
+              videoRef.current.requestVideoFrameCallback(callback);
           }
         };
 
-        frameCallbackIdRef.current = videoRef.current.requestVideoFrameCallback(callback);
+        frameCallbackIdRef.current =
+          videoRef.current.requestVideoFrameCallback(callback);
       } else {
         // Fallback to setInterval if requestVideoFrameCallback is not supported
         fallbackIntervalRef.current = window.setInterval(
@@ -188,7 +219,7 @@ export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWi
       setError(`Failed to start capture: ${err.message}`);
       isRecordingRef.current = false;
       setIsRecording(false);
-      
+
       // Notify parent that session failed to start
       if (onSessionChange) {
         onSessionChange(false);
@@ -199,7 +230,7 @@ export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWi
   const stopCapture = () => {
     isRecordingRef.current = false;
     setIsRecording(false);
-    
+
     // Notify parent that session has stopped
     if (onSessionChange) {
       onSessionChange(false);
@@ -246,12 +277,17 @@ export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWi
 
   // Control recording state based on isActive prop
   useEffect(() => {
-    console.log('📸 SessionCapture: isActive changed to', isActive, 'isRecording:', isRecording);
+    console.log(
+      "📸 SessionCapture: isActive changed to",
+      isActive,
+      "isRecording:",
+      isRecording
+    );
     if (isActive && !isRecording) {
-      console.log('📸 SessionCapture: Starting capture...');
+      console.log("📸 SessionCapture: Starting capture...");
       startCapture();
     } else if (!isActive && isRecording) {
-      console.log('📸 SessionCapture: Stopping capture...');
+      console.log("📸 SessionCapture: Stopping capture...");
       stopCapture();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -268,7 +304,14 @@ export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWi
   }, []);
 
   return (
-    <div style={{ marginBottom: "2rem", padding: "1rem", border: "1px solid #ccc", borderRadius: "8px" }}>
+    <div
+      style={{
+        marginBottom: "2rem",
+        padding: "1rem",
+        border: "1px solid #ccc",
+        borderRadius: "8px",
+      }}
+    >
       <h2>Screen Session Capture</h2>
       <div style={{ marginBottom: "1rem" }}>
         <button
@@ -283,21 +326,35 @@ export default function SessionCapture({ intervalMs = 3000, quality = 0.6, maxWi
             border: "none",
             borderRadius: "4px",
             marginRight: "0.5rem",
-          }}>
+          }}
+        >
           {isRecording ? "Stop Session" : "Start Session"}
         </button>
         {isRecording && (
-          <span style={{ color: "#28a745", fontWeight: "bold" }}>Recording... ({captureCount} captures)</span>
+          <span style={{ color: "#28a745", fontWeight: "bold" }}>
+            Recording... ({captureCount} captures)
+          </span>
         )}
       </div>
-      {error && <div style={{ color: "#dc3545", marginBottom: "1rem" }}>Error: {error}</div>}
+      {error && (
+        <div style={{ color: "#dc3545", marginBottom: "1rem" }}>
+          Error: {error}
+        </div>
+      )}
       <div style={{ fontSize: "0.9rem", color: "#666" }}>
         <div>
-          Interval: {intervalMs}ms | Quality: {quality} | Max Width: {maxWidth}px
+          Interval: {intervalMs}ms | Quality: {quality} | Max Width: {maxWidth}
+          px
         </div>
       </div>
       {/* Hidden video and canvas elements */}
-      <video ref={videoRef} style={{ display: "none" }} playsInline muted autoPlay />
+      <video
+        ref={videoRef}
+        style={{ display: "none" }}
+        playsInline
+        muted
+        autoPlay
+      />
       <canvas ref={canvasRef} style={{ display: "none" }} />
     </div>
   );

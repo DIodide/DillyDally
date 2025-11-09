@@ -72,6 +72,13 @@ app.post("/api/screenshots", upload.single("image"), async (req, res) => {
     return res.status(400).json({ error: "Session ID is required" });
   }
 
+  // Validate sessionId format - Convex IDs for 'sessions' table should start with 'k' and be 32 chars
+  // IDs from other tables have different prefixes, so we can catch wrong table IDs early
+  if (typeof sessionId !== "string" || sessionId.length < 32) {
+    console.error(`[Screenshot] Invalid sessionId format: ${sessionId}`);
+    return res.status(400).json({ error: "Invalid session ID format" });
+  }
+
   console.log(`[Screenshot] User ID: ${userId}, Session ID: ${sessionId}`);
 
   try {
@@ -96,8 +103,20 @@ app.post("/api/screenshots", upload.single("image"), async (req, res) => {
         `[Session ${sessionId}] Found ${existingActivities.length} existing activities:`,
         existingActivities
       );
-    } catch (queryError) {
-      console.error("Error fetching session activities:", queryError);
+    } catch (queryError: any) {
+      // Check if it's the specific ID validation error
+      if (
+        queryError?.message?.includes("authVerifiers") ||
+        queryError?.message?.includes("does not match the table name")
+      ) {
+        console.error(
+          `[Screenshot] Invalid sessionId - ID is from wrong table: ${sessionId}`
+        );
+        console.error(`[Screenshot] Error details:`, queryError.message);
+        // Continue without existing activities - this is a data issue, not a fatal error
+      } else {
+        console.error("Error fetching session activities:", queryError);
+      }
       // Continue without existing activities if query fails
     }
 
