@@ -5,7 +5,7 @@
 }
 
 .App {
-  max-width: 1200px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 2rem;
   min-height: 100vh;
@@ -49,12 +49,53 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
+/* Two Column Layout */
+.main-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem;
+  margin: 2rem 0;
+  align-items: start;
+}
+
+.left-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+}
+
+.right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+}
+
 /* Stats Grid */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
   margin: 3rem 0;
+}
+
+@media (max-width: 1024px) {
+  .main-layout {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .left-column,
+  .right-column {
+    align-items: center;
+  }
 }
 
 @media (max-width: 768px) {
@@ -64,6 +105,11 @@
 
   .app-logo {
     height: 48px;
+  }
+
+  .main-layout {
+    gap: 1.5rem;
+    margin: 1rem 0;
   }
 
   .stats-grid {

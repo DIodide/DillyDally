@@ -5,6 +5,8 @@ import FaceTracking from "./components/FaceTracking";
 import Timer from "./components/Timer";
 import StatsCard from "./components/StatsCard";
 import Insights from "./components/Insights";
+import WebcamDisplay from "./components/WebcamDisplay";
+import MessageBox from "./components/MessageBox";
 import type { AttentionState } from "./utils/faceTracking/classify";
 import logoImage from "./assets/logo.png";
 // import { api } from "./lib/convexApi";
@@ -22,11 +24,15 @@ function App() {
   const [timesFocused] = useState(0);
   const [breaks] = useState(0);
   const [distractionAlerts, setDistractionAlerts] = useState(0);
+  const [currentAttentionState, setCurrentAttentionState] = useState<AttentionState | null>(null);
 
   const lastLogTimeRef = useRef(0);
   const lastStateRef = useRef("");
 
   const handleAttentionChange = (state: AttentionState) => {
+    // Update current attention state for webcam display
+    setCurrentAttentionState(state);
+
     const now = Date.now();
     const timeSinceLastLog = now - lastLogTimeRef.current;
     const stateChanged = state.state !== lastStateRef.current;
@@ -92,8 +98,19 @@ function App() {
           </div>
         </header>
 
-        {/* Timer Section */}
-        <Timer isActive={isSessionActive} onStart={handleStart} onStop={handleStop} onReset={handleReset} />
+        {/* Two Column Layout */}
+        <div className="main-layout">
+          {/* Left Column: Timer */}
+          <div className="left-column">
+            <Timer isActive={isSessionActive} onStart={handleStart} onStop={handleStop} onReset={handleReset} />
+          </div>
+
+          {/* Right Column: Webcam and Messages */}
+          <div className="right-column">
+            <WebcamDisplay attentionState={currentAttentionState} isActive={isSessionActive} />
+            <MessageBox messages={[]} />
+          </div>
+        </div>
 
         {/* Stats Cards */}
         <div className="stats-grid">
