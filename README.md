@@ -1,240 +1,229 @@
-# DillyDally Monorepo
+# DillyDally  
+### **See your focus. Improve your focus.** 🧠✨
 
-A full-stack task management application with React frontend, Express.js backend, and Convex as the backend-as-a-service platform.
+DillyDally is a next-generation, AI-powered Pomodoro system that doesn’t just track **how long** you work — it helps you understand **how well** you were able to focus. Traditional productivity timers assume that time spent = progress. But in a world of constant interruptions, simply measuring time is no longer enough.
 
-## Project Structure
+DillyDally passively monitors subtle indicators of attention (like tab switching or gaze drift) and uses an LLM to generate **personalized Focus Reports** at the end of every work session — helping you understand your distraction patterns and train deeper focus.
+
+Focus isn’t a timer.  
+**Focus is a trainable skill.**  
+DillyDally helps you develop it.
+
+---
+
+## 🎯 The Problem
+Most Pomodoro timers only record **time spent**, not **focus quality**.
+
+Which means you can complete 4 sessions and still feel like:
+- Nothing meaningful got done
+- You were fighting distractions the whole time
+- You have no idea *why* your attention slipped
+
+**Focus leaks are invisible. DillyDally makes them visible.**
+
+---
+
+## 💡 Our Solution
+DillyDally adds **intelligent reflection** to the Pomodoro method:
+
+1. Start a session.
+2. The client periodically captures small, privacy-safe context signals.
+3. The backend generates **micro-insights** using an LLM.
+4. At session end, micro-insights are aggregated into a **Focus Report**, showing:
+   - Moments of deep focus
+   - Distraction triggers
+   - Behavior patterns
+   - Personalized recommendations
+
+This creates a **feedback loop**, turning ordinary Pomodoros into skill-building sessions.
+
+---
+
+## 🏆 What Makes DillyDally Different
+
+| Traditional Productivity Tools | **DillyDally** |
+|---|---|
+| Only track time | Measures *quality* of focus |
+| No awareness of distraction patterns | Detects attention drift + context triggers |
+| No personalized learning | Generates supportive AI reflections & guidance |
+| Treat focus as fixed | Treats focus as a *skill that improves* |
+
+DillyDally is not a timer —  
+**it’s a coach for your attention.**
+
+---
+
+## 🧱 Monorepo Architecture
 
 ```
 DillyDally/
 ├── convex/                     # Shared Convex backend functions
-│   ├── schema.ts              # Database schema definitions
-│   ├── tasks.ts               # Task query/mutation functions
-│   └── tsconfig.json          # TypeScript config for Convex
+│   ├── schema.ts              # Database schema
+│   ├── tasks.ts               # Query/mutation logic
+│   └── tsconfig.json
 ├── dillydally-frontend/       # React + Vite frontend
 │   ├── src/
-│   │   ├── App.tsx           # Main app component with Convex integration
-│   │   └── main.tsx          # Entry point with ConvexProvider
-│   └── vite.config.ts        # Vite config with convex alias
-├── dillydally-express/        # Express.js backend
-│   ├── src/
-│   │   └── index.ts          # Express server with Convex client
+│   │   ├── App.tsx           
+│   │   └── main.tsx          
+│   └── vite.config.ts
+├── dillydally-express/        # Express.js backend server
+│   ├── src/index.ts          
 │   ├── package.json
 │   └── tsconfig.json
-├── package.json               # Root workspace configuration
-└── sampleData.jsonl          # Sample data for initial import
+├── package.json               # Workspace configuration
+└── sampleData.jsonl           # Example import data
 ```
 
-## Features
+### Tech Stack
 
-- **Shared Convex Backend**: Single source of truth accessible by both frontend and backend
-- **React Frontend**: Modern React app with TypeScript and Vite
-- **Express Backend**: REST API server with Convex integration
-- **Monorepo Setup**: Workspaces-based monorepo with concurrent dev servers
-- **Type Safety**: Full TypeScript support across all projects
+| Layer | Technology |
+|------|------------|
+| Frontend UI | React 19 + TypeScript + Vite |
+| Backend API | Express.js + Node |
+| Database / Realtime Backend | **Convex** (Backend-as-a-Service) |
+| AI Processing | OpenAI / Anthropic LLM |
+| Dev Utilities | TSX, Concurrently, ESLint |
 
-## Prerequisites
+---
 
-- Node.js (v18 or higher recommended)
-- npm or yarn
-- A GitHub account (for Convex authentication)
+## 🚀 Features
 
-## Setup Instructions
+- AI-generated **Focus Reports**
+- Live Pomodoro-style session timer
+- Automatic attention-drift detection
+- Micro-insight logging per session
+- Real-time data and app reactivity via Convex
+- Monorepo sharing backend logic between services
+- Fully typed end-to-end system
+
+---
+
+## 🔧 Setup Instructions
 
 ### 1. Install Dependencies
-
-From the monorepo root, install all dependencies:
-
 ```bash
 npm install
 ```
 
-This will install dependencies for the root and all workspaces (frontend and backend).
-
 ### 2. Initialize Convex
-
-Run the Convex development server to create your deployment:
-
 ```bash
 npx convex dev
 ```
-
 This will:
+- Prompt GitHub login
+- Create `.env.local` with `CONVEX_URL`
+- Generate `/convex/_generated` types
 
-- Prompt you to log in with GitHub
-- Create a new Convex project
-- Generate the `.env.local` file with your `CONVEX_URL`
-- Create the `convex/_generated/` folder with type definitions
-- Watch for changes to your Convex functions
-
-### 3. Configure Environment Variables
-
-**For the Frontend:**
-
+### 3. Configure Frontend Environment
 Create `dillydally-frontend/.env.local`:
-
-```env
-VITE_CONVEX_URL=<your-convex-url-from-root-.env.local>
+```
+VITE_CONVEX_URL=<your-convex-url>
 ```
 
-Or simply copy the CONVEX*URL from the root `.env.local` and prefix it with `VITE*`.
-
-**For the Backend:**
-
-The Express backend will automatically read from the root `.env.local` file.
-
-## Running the Application
-
-### Start All Services (Recommended)
-
-From the monorepo root, run:
-
+### 4. Run All Services Together
 ```bash
 npm run dev
 ```
 
-This will start all three services concurrently with colored output:
+| Service | URL |
+|--------|-----|
+| Frontend | http://localhost:5173 |
+| Backend API | http://localhost:3001 |
+| Convex dev server | Cloud-hosted |
 
-- **[convex]** (blue): Convex development server on the cloud
-- **[frontend]** (green): Vite dev server at `http://localhost:5173`
-- **[backend]** (yellow): Express server at `http://localhost:3001`
-
-### Start Services Individually
-
-If you prefer to run services separately:
-
-**Convex:**
-
+### Run Services Individually
 ```bash
 npx convex dev
-```
-
-**Frontend:**
-
-```bash
 npm run dev --workspace=dillydally-frontend
-```
-
-**Backend:**
-
-```bash
 npm run dev --workspace=dillydally-express
 ```
 
-## API Endpoints
+---
 
-### Express Backend
+## 🧪 API Endpoints (Express)
 
-- **GET /** - Health check endpoint
+### GET `/`
+```json
+{
+  "status": "ok",
+  "message": "DillyDally Express API is running",
+  "convexConnected": true
+}
+```
 
-  ```json
-  {
-    "status": "ok",
-    "message": "DillyDally Express API is running",
-    "convexConnected": true
-  }
-  ```
+### GET `/api/tasks`
+```json
+{
+  "success": true,
+  "tasks": [
+    { "_id": "...", "text": "Buy groceries", "isCompleted": true }
+  ]
+}
+```
 
-- **GET /api/tasks** - Get all tasks from Convex
-  ```json
-  {
-    "success": true,
-    "tasks": [
-      {
-        "_id": "...",
-        "text": "Buy groceries",
-        "isCompleted": true
-      }
-    ]
-  }
-  ```
+---
 
-## Convex Functions
+## 📦 Convex Functions
 
-### Queries
-
-- **`api.tasks.get`** - Fetches all tasks from the database
-
-### Schema
-
-```typescript
+### Schema (`schema.ts`)
+```ts
 tasks: {
   text: string,
   isCompleted: boolean
 }
 ```
 
-## Development Workflow
+### Query (`api.tasks.get`)
+Returns all tasks.
 
-1. **Make changes to Convex functions**: Edit files in `convex/` folder
-2. **Frontend development**: Work in `dillydally-frontend/src/`
-3. **Backend development**: Work in `dillydally-express/src/`
-4. **Hot reload**: All services support hot module replacement
+---
 
-The Convex dev server will automatically push your changes to the cloud and regenerate types.
+## 🧭 Development Workflow
 
-## Building for Production
+| Task | Work In |
+|------|--------|
+| UI + Interactions | `dillydally-frontend/src/` |
+| API logic | `dillydally-express/src/` |
+| Database / backend logic | `convex/` |
+
+Convex automatically syncs & regenerates types live.
+
+---
+
+## 🛠 Troubleshooting
+
+| Issue | Fix |
+|------|-----|
+| `CONVEX_URL` missing | Ensure `npx convex dev` was run once |
+| Missing Convex types | Run Convex dev server |
+| Express cannot connect | Ensure `.env.local` exists in repo root |
+| Ports in use | Change via Vite config or `PORT` env var |
+
+---
+
+## 🏁 Production Deployment
 
 ### Frontend
-
 ```bash
 npm run build --workspace=dillydally-frontend
 ```
 
-Output will be in `dillydally-frontend/dist/`
-
 ### Backend
-
 ```bash
 npm run build --workspace=dillydally-express
 npm run start --workspace=dillydally-express
 ```
 
-### Convex
-
-Deploy your Convex functions to production:
-
+### Convex Deploy
 ```bash
 npx convex deploy
 ```
 
-## Troubleshooting
+---
 
-### Convex URL not found
+### **See your focus. Improve your focus.**
 
-Make sure you've run `npx convex dev` and that the `.env.local` file was created in the root directory.
-
-### Frontend can't find Convex types
-
-Ensure the Convex dev server is running. It generates the types in `convex/_generated/`.
-
-### Express server can't connect to Convex
-
-Check that:
-
-1. The root `.env.local` exists and has the `CONVEX_URL`
-2. The Express server is loading the environment variables correctly
-
-### Port already in use
-
-If ports 5173 (frontend) or 3001 (backend) are in use, you can change them:
-
-- Frontend: Add `--port <number>` to the dev script
-- Backend: Set `PORT` environment variable
-
-## Tech Stack
-
-- **Frontend**: React 19, TypeScript, Vite
-- **Backend**: Express.js, TypeScript, Node.js
-- **Database & Backend**: Convex (BaaS)
-- **Dev Tools**: TSX, Concurrently, ESLint
-
-## Learn More
-
-- [Convex Documentation](https://docs.convex.dev)
-- [React Documentation](https://react.dev)
-- [Express Documentation](https://expressjs.com)
-- [Vite Documentation](https://vitejs.dev)
-
-## License
-
-MIT
+```
+Built with intention, curiosity, and deep work energy ✨☕
+HackPrinceton 2025
+```
