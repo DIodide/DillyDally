@@ -8,6 +8,7 @@ import Insights from "./components/Insights";
 import WebcamDisplay from "./components/WebcamDisplay";
 import MessageBox from "./components/MessageBox";
 import SessionPlayback from "./components/SessionPlayback";
+import SessionsSidebar from "./components/SessionsSidebar";
 import type { AttentionState } from "./utils/faceTracking/classify";
 import logoImage from "./assets/logo.png";
 import { api } from "./lib/convexApi";
@@ -29,6 +30,8 @@ function App() {
   const [currentAttentionState, setCurrentAttentionState] = useState<AttentionState | null>(null);
   const [showPlayback, setShowPlayback] = useState(false);
   const [endedSessionId, setEndedSessionId] = useState<Id<"sessions"> | null>(null);
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [selectedSessionId, setSelectedSessionId] = useState<Id<"sessions"> | null>(null);
 
   const user = useQuery(api.functions.currentUser);
   const startSession = useMutation(api.functions.startSession);
@@ -122,6 +125,16 @@ function App() {
         {/* Header */}
         <header className="app-header">
           <div className="logo-container">
+            <button
+              className="sidebar-toggle-btn"
+              onClick={() => setShowSidebar(!showSidebar)}
+              aria-label="Toggle sessions sidebar">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </button>
             <img src={logoImage} alt="DillyDally" className="app-logo" />
           </div>
           <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
@@ -136,46 +149,76 @@ function App() {
           </div>
         </header>
 
-        {/* Session Playback - shown when timer ends */}
-        {showPlayback && endedSessionId ? (
-          <SessionPlayback
-            sessionId={endedSessionId}
-            onDismiss={() => {
+        {/* Sessions Sidebar Backdrop (mobile) */}
+        {showSidebar && <div className="sessions-sidebar-backdrop" onClick={() => setShowSidebar(false)} />}
+
+        {/* Sessions Sidebar */}
+        {showSidebar && (
+          <SessionsSidebar
+            selectedSessionId={selectedSessionId}
+            onSelectSession={(sessionId) => {
+              setSelectedSessionId(sessionId);
               setShowPlayback(false);
               setEndedSessionId(null);
+              // Close sidebar on mobile after selection
+              if (window.innerWidth <= 768) {
+                setShowSidebar(false);
+              }
+            }}
+            onClose={() => {
+              setShowSidebar(false);
+              setSelectedSessionId(null);
             }}
           />
-        ) : (
-          <>
-            {/* Two Column Layout */}
-            <div className="main-layout">
-              {/* Left Column: Timer */}
-              <div className="left-column">
-                <Timer isActive={isSessionActive} onStart={handleStart} onStop={handleStop} onReset={handleReset} />
-                {/* Compact Stats Row */}
-                <div className="compact-stats-row">
-                  <StatsCard icon="☕" title="Breaks" value={breaks.toString()} iconBgColor="#d4f1f4" compact />
-                  <StatsCard
-                    icon="⚠️"
-                    title="Distraction Alerts"
-                    value={distractionAlerts.toString()}
-                    iconBgColor="#ffe5e5"
-                    compact
-                  />
+        )}
+
+        {/* Main Content Area */}
+        <div className={showSidebar ? "app-content-with-sidebar" : "app-content"}>
+          {/* Session Playback - shown when viewing a past session or when timer ends */}
+          {selectedSessionId || (showPlayback && endedSessionId) ? (
+            <SessionPlayback
+              sessionId={(selectedSessionId || endedSessionId)!}
+              onDismiss={() => {
+                if (selectedSessionId) {
+                  setSelectedSessionId(null);
+                } else {
+                  setShowPlayback(false);
+                  setEndedSessionId(null);
+                }
+              }}
+            />
+          ) : (
+            <>
+              {/* Two Column Layout */}
+              <div className="main-layout">
+                {/* Left Column: Timer */}
+                <div className="left-column">
+                  <Timer isActive={isSessionActive} onStart={handleStart} onStop={handleStop} onReset={handleReset} />
+                  {/* Compact Stats Row */}
+                  <div className="compact-stats-row">
+                    <StatsCard icon="☕" title="Breaks" value={breaks.toString()} iconBgColor="#d4f1f4" compact />
+                    <StatsCard
+                      icon="⚠️"
+                      title="Distraction Alerts"
+                      value={distractionAlerts.toString()}
+                      iconBgColor="#ffe5e5"
+                      compact
+                    />
+                  </div>
+                </div>
+
+                {/* Right Column: Webcam and Messages */}
+                <div className="right-column">
+                  <WebcamDisplay attentionState={currentAttentionState} isActive={isSessionActive} />
+                  <MessageBox sessionId={sessionId} />
                 </div>
               </div>
 
-              {/* Right Column: Webcam and Messages */}
-              <div className="right-column">
-                <WebcamDisplay attentionState={currentAttentionState} isActive={isSessionActive} />
-                <MessageBox sessionId={sessionId} />
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Insights Section */}
-        <Insights />
+              {/* Insights Section */}
+              <Insights />
+            </>
+          )}
+        </div>
 
         {/* Hidden Session Capture Component - controls screenshot capture */}
         <div style={{ display: "none" }}>

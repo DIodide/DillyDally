@@ -34,7 +34,10 @@ export default function SessionCapture({
   const uploadInProgressRef = useRef<boolean>(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const fallbackIntervalRef = useRef<number | null>(null);
+  const fallbackTimeoutRef = useRef<number | null>(null);
   const isRecordingRef = useRef<boolean>(false);
+  const isTabVisibleRef = useRef<boolean>(true);
+  const lastScheduleTimeRef = useRef<number>(0);
 
   const apiBase = import.meta.env.VITE_EXPRESS_URL;
 
@@ -153,6 +156,8 @@ export default function SessionCapture({
       // Set up frame callback
       isRecordingRef.current = true;
       setIsRecording(true);
+      lastScheduleTimeRef.current = performance.now();
+      lastCaptureTimeRef.current = performance.now();
       console.log("📸 SessionCapture: Recording started successfully");
 
       // Notify parent that session has started
@@ -160,9 +165,52 @@ export default function SessionCapture({
         onSessionChange(true);
       }
 
-      if (videoRef.current && "requestVideoFrameCallback" in HTMLVideoElement.prototype) {
+      // Helper to check visibility and get appropriate interval
+      const getEffectiveInterval = () => {
+        return isTabVisibleRef.current ? intervalMs : Math.max(intervalMs, 2000); // At least 2s when hidden
+      };
+
+      // Helper to schedule next capture with drift compensation
+      const scheduleNextCapture = () => {
+        if (!isRecordingRef.current) return;
+
+        const now = performance.now();
+        const elapsed = now - lastCaptureTimeRef.current;
+        const effectiveInterval = getEffectiveInterval();
+
+        if (elapsed >= effectiveInterval && !uploadInProgressRef.current) {
+          lastCaptureTimeRef.current = now;
+          captureAndUpload();
+        }
+
+        // Schedule next check using setTimeout with drift compensation
+        if (isRecordingRef.current) {
+          const baseCheckInterval = isTabVisibleRef.current ? 100 : 500;
+          
+          // Calculate drift compensation
+          const actualDelay = now - lastScheduleTimeRef.current;
+          const drift = actualDelay - baseCheckInterval;
+          const adjustedDelay = Math.max(10, baseCheckInterval - drift);
+          
+          lastScheduleTimeRef.current = now;
+          fallbackTimeoutRef.current = window.setTimeout(scheduleNextCapture, adjustedDelay);
+        }
+      };
+
+      // Use requestVideoFrameCallback when visible and supported
+      if (videoRef.current && "requestVideoFrameCallback" in HTMLVideoElement.prototype && isTabVisibleRef.current) {
         const callback = (now: number) => {
           if (!isRecordingRef.current) return;
+
+          // If tab becomes hidden, switch to setTimeout fallback
+          if (!isTabVisibleRef.current) {
+            if (frameCallbackIdRef.current !== null && videoRef.current) {
+              videoRef.current.cancelVideoFrameCallback(frameCallbackIdRef.current);
+              frameCallbackIdRef.current = null;
+            }
+            scheduleNextCapture();
+            return;
+          }
 
           const elapsed = now - lastCaptureTimeRef.current;
           if (elapsed >= intervalMs && !uploadInProgressRef.current) {
@@ -170,27 +218,77 @@ export default function SessionCapture({
             captureAndUpload();
           }
 
-          if (videoRef.current && isRecordingRef.current) {
+          if (videoRef.current && isRecordingRef.current && isTabVisibleRef.current) {
             frameCallbackIdRef.current = videoRef.current.requestVideoFrameCallback(callback);
           }
         };
 
         frameCallbackIdRef.current = videoRef.current.requestVideoFrameCallback(callback);
       } else {
-        // Fallback to setInterval if requestVideoFrameCallback is not supported
-        fallbackIntervalRef.current = window.setInterval(
-          () => {
+        // Use setTimeout fallback (works better when tab is hidden)
+        scheduleNextCapture();
+      }
+
+      // Store scheduleNextCapture in a way that visibility handler can access it
+      const scheduleRef = { current: scheduleNextCapture };
+      
+      // Listen for visibility changes
+      const handleVisibilityChange = () => {
+        if (!isRecordingRef.current) return;
+        
+        isTabVisibleRef.current = !document.hidden && document.visibilityState === "visible";
+        
+        // Cancel current callbacks/timeouts
+        if (frameCallbackIdRef.current !== null && videoRef.current && "cancelVideoFrameCallback" in HTMLVideoElement.prototype) {
+          videoRef.current.cancelVideoFrameCallback(frameCallbackIdRef.current);
+          frameCallbackIdRef.current = null;
+        }
+        if (fallbackTimeoutRef.current !== null) {
+          clearTimeout(fallbackTimeoutRef.current);
+          fallbackTimeoutRef.current = null;
+        }
+        
+        // Restart with appropriate method based on visibility
+        if (isTabVisibleRef.current && videoRef.current && "requestVideoFrameCallback" in HTMLVideoElement.prototype) {
+          const callback = (now: number) => {
             if (!isRecordingRef.current) return;
-            const now = performance.now();
+
+            // If tab becomes hidden, switch to setTimeout fallback
+            if (!isTabVisibleRef.current) {
+              if (frameCallbackIdRef.current !== null && videoRef.current) {
+                videoRef.current.cancelVideoFrameCallback(frameCallbackIdRef.current);
+                frameCallbackIdRef.current = null;
+              }
+              scheduleRef.current();
+              return;
+            }
+
             const elapsed = now - lastCaptureTimeRef.current;
             if (elapsed >= intervalMs && !uploadInProgressRef.current) {
               lastCaptureTimeRef.current = now;
               captureAndUpload();
             }
-          },
-          Math.min(intervalMs, 100)
-        ); // Check at least every 100ms
-      }
+
+            if (videoRef.current && isRecordingRef.current && isTabVisibleRef.current) {
+              frameCallbackIdRef.current = videoRef.current.requestVideoFrameCallback(callback);
+            }
+          };
+
+          if (videoRef.current && isRecordingRef.current) {
+            frameCallbackIdRef.current = videoRef.current.requestVideoFrameCallback(callback);
+          }
+        } else {
+          // Use setTimeout fallback
+          scheduleRef.current();
+        }
+      };
+
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+      
+      // Store cleanup function for visibility listener
+      (videoRef.current as any)._visibilityCleanup = () => {
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      };
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";
       console.error("📸 SessionCapture: Failed to start capture:", err);
@@ -228,6 +326,18 @@ export default function SessionCapture({
     if (fallbackIntervalRef.current !== null) {
       clearInterval(fallbackIntervalRef.current);
       fallbackIntervalRef.current = null;
+    }
+
+    // Clear fallback timeout
+    if (fallbackTimeoutRef.current !== null) {
+      clearTimeout(fallbackTimeoutRef.current);
+      fallbackTimeoutRef.current = null;
+    }
+
+    // Clean up visibility change listener
+    if (videoRef.current && (videoRef.current as any)._visibilityCleanup) {
+      (videoRef.current as any)._visibilityCleanup();
+      delete (videoRef.current as any)._visibilityCleanup;
     }
 
     // Abort any in-flight upload
