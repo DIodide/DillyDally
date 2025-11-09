@@ -7,6 +7,7 @@ import StatsCard from "./components/StatsCard";
 import Insights from "./components/Insights";
 import WebcamDisplay from "./components/WebcamDisplay";
 import MessageBox from "./components/MessageBox";
+import SessionSnapshots from "./components/SessionSnapshots";
 import type { AttentionState } from "./utils/faceTracking/classify";
 import logoImage from "./assets/logo.png";
 import { api } from "./lib/convexApi";
@@ -146,7 +147,7 @@ function App() {
           {/* Right Column: Webcam and Messages */}
           <div className="right-column">
             <WebcamDisplay attentionState={currentAttentionState} isActive={isSessionActive} />
-            <MessageBox messages={[]} />
+            <MessageBox sessionId={sessionId} />
           </div>
         </div>
 
@@ -159,6 +160,9 @@ function App() {
 
         {/* Insights Section */}
         <Insights />
+
+        {/* Session Snapshots Section */}
+        <SessionSnapshots sessionId={sessionId} />
 
         {/* Hidden Session Capture Component - controls screenshot capture */}
         <div style={{ display: "none" }}>
