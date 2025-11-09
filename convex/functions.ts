@@ -93,3 +93,17 @@ export const createCameraSnapshot = mutation({
     });
   },
 });
+
+export const getSessionSnapshots = query({
+  args: {
+    sessionId: v.id("sessions"),
+  },
+  handler: async (ctx, args) => {
+    const snapshots = await ctx.db
+      .query("snapshots")
+      .filter((q) => q.eq(q.field("sessionId"), args.sessionId))
+      .order("desc")
+      .collect();
+    return snapshots;
+  },
+});
