@@ -3,7 +3,7 @@ import cors from "cors";
 import multer from "multer";
 import { ConvexHttpClient } from "convex/browser";
 // Try to import from local copy first, fallback to relative path for development
-import { api } from "./lib/api";
+import { api } from "./lib/api.js";
 import * as dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
@@ -27,7 +27,9 @@ const PORT = process.env.PORT || 3001;
 const convexUrl = process.env.CONVEX_URL;
 if (!convexUrl) {
   console.error("Error: CONVEX_URL is not set in .env.local");
-  console.error("Please run `npx convex dev` from the monorepo root to configure.");
+  console.error(
+    "Please run `npx convex dev` from the monorepo root to configure."
+  );
   process.exit(1);
 }
 
@@ -77,15 +79,23 @@ app.post("/api/screenshots", upload.single("image"), async (req, res) => {
     const base64 = req.file.buffer.toString("base64");
     const timestamp = req.body.ts || Date.now();
 
-    console.log(`[Screenshot ${timestamp}] base64 length: ${base64.length}, prefix: ${base64.slice(0, 100)}`);
+    console.log(
+      `[Screenshot ${timestamp}] base64 length: ${base64.length}, prefix: ${base64.slice(0, 100)}`
+    );
 
     // Get existing activities for this session
     let existingActivities: string[] = [];
     try {
-      existingActivities = await convexClient.query(api.functions.getSessionActivities, {
-        sessionId: sessionId as any,
-      });
-      console.log(`[Session ${sessionId}] Found ${existingActivities.length} existing activities:`, existingActivities);
+      existingActivities = await convexClient.query(
+        api.functions.getSessionActivities,
+        {
+          sessionId: sessionId as any,
+        }
+      );
+      console.log(
+        `[Session ${sessionId}] Found ${existingActivities.length} existing activities:`,
+        existingActivities
+      );
     } catch (queryError) {
       console.error("Error fetching session activities:", queryError);
       // Continue without existing activities if query fails
@@ -176,8 +186,12 @@ app
   .on("error", (err: NodeJS.ErrnoException) => {
     if (err.code === "EADDRINUSE") {
       console.error(`❌ Port ${PORT} is already in use.`);
-      console.error(`   Please stop the process using port ${PORT} or set a different PORT.`);
-      console.error(`   To find and kill the process: lsof -ti:${PORT} | xargs kill -9`);
+      console.error(
+        `   Please stop the process using port ${PORT} or set a different PORT.`
+      );
+      console.error(
+        `   To find and kill the process: lsof -ti:${PORT} | xargs kill -9`
+      );
       process.exit(1);
     } else {
       console.error("❌ Server error:", err);
