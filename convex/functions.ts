@@ -262,11 +262,11 @@ export const getWeeklyInsights = query({
     // Total Focus Time (productive time from snapshots)
     const thisWeekProductiveTime = thisWeekSnapshots
       .filter((s) => s.isProductive)
-      .reduce((sum, s) => {
+      .reduce((sum) => {
         // Estimate time per snapshot (assuming ~30 seconds between snapshots)
         return sum + 30000;
       }, 0);
-    const lastWeekProductiveTime = lastWeekSnapshots.filter((s) => s.isProductive).reduce((sum, s) => sum + 30000, 0);
+    const lastWeekProductiveTime = lastWeekSnapshots.filter((s) => s.isProductive).reduce((sum) => sum + 30000, 0);
 
     // Sessions Completed
     const thisWeekSessionsCount = thisWeekSessions.length;
