@@ -22,9 +22,6 @@ export const FaceTracking: React.FC<FaceTrackingProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<Webcam>(null);
   const [loaded, setLoaded] = useState(false);
-  const [status, setStatus] = useState("—");
-  const [confidence, setConfidence] = useState(0);
-  const [showDebug, setShowDebug] = useState(false);
   const initializingRef = useRef(false);
   const cleanupRef = useRef<(() => void) | null>(null);
 
@@ -32,10 +29,19 @@ export const FaceTracking: React.FC<FaceTrackingProps> = ({
     if (!isTracking) {
       setLoaded(false);
       initializingRef.current = false;
+      
       // Cleanup detector when tracking stops
       if (cleanupRef.current) {
         cleanupRef.current();
         cleanupRef.current = null;
+      }
+      
+      // Stop webcam stream
+      const video = videoRef.current?.video;
+      if (video && video.srcObject) {
+        const stream = video.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
       }
     }
     
@@ -44,6 +50,14 @@ export const FaceTracking: React.FC<FaceTrackingProps> = ({
       if (cleanupRef.current) {
         cleanupRef.current();
         cleanupRef.current = null;
+      }
+      
+      // Stop webcam stream on unmount
+      const video = videoRef.current?.video;
+      if (video && video.srcObject) {
+        const stream = video.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
       }
     };
   }, [isTracking]);
@@ -55,21 +69,29 @@ export const FaceTracking: React.FC<FaceTrackingProps> = ({
     const video = videoRef.current?.video;
     if (!video || !canvasRef.current) return;
     
+    // Check if video is playing
+    if (video.paused) {
+      console.log("Video is paused, attempting to play...");
+      try {
+        await video.play();
+      } catch (e) {
+        console.error("Failed to play video:", e);
+      }
+    }
+    
     // Wait for video to have valid dimensions
     if (video.videoWidth === 0 || video.videoHeight === 0) {
       console.log("Video dimensions not ready yet, waiting...");
       return;
     }
 
-    console.log("Starting face detector with video dimensions:", video.videoWidth, video.videoHeight);
+    console.log("✅ Starting face detector with video dimensions:", video.videoWidth, "x", video.videoHeight);
+    console.log("Video ready state:", video.readyState, "Playing:", !video.paused);
     initializingRef.current = true;
     
     try {
       const cleanup = await runDetector(video, canvasRef.current, (result: AttentionState) => {
         if (result) {
-          setStatus(result.state);
-          setConfidence(result.confidence ?? 0);
-          
           // Notify parent component of attention changes
           if (onAttentionChange) {
             onAttentionChange(result);
@@ -86,127 +108,46 @@ export const FaceTracking: React.FC<FaceTrackingProps> = ({
     }
   };
 
-  const handleRecalibrate = () => {
-    window.dispatchEvent(new Event("recalibrate-attention"));
-  };
-
   if (!isTracking) {
     return null;
   }
 
   return (
-    <div style={{
-      position: "fixed",
-      bottom: "20px",
-      right: "20px",
-      zIndex: 1000,
-      backgroundColor: "white",
-      borderRadius: "12px",
-      boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-      overflow: "hidden",
+    <div style={{ 
+      position: "fixed", 
+      top: "-9999px", 
+      left: "-9999px",
+      pointerEvents: "none"
     }}>
-      {/* Header */}
-      <div style={{
-        padding: "12px",
-        borderBottom: "1px solid #e0e0e0",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-      }}>
-        <div>
-          <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 600 }}>
-            Face Tracking
-          </h3>
-          <p style={{ 
-            margin: "4px 0 0 0", 
-            fontSize: "12px",
-            color: status.includes("away") || status === "no_face" ? "#f44336" : "#4caf50"
-          }}>
-            {status.replace(/_/g, " ")}
-          </p>
-        </div>
-        <button
-          onClick={() => setShowDebug(!showDebug)}
-          style={{
-            background: "none",
-            border: "1px solid #ddd",
-            borderRadius: "4px",
-            padding: "4px 8px",
-            fontSize: "12px",
-            cursor: "pointer",
-          }}
-        >
-          {showDebug ? "Hide" : "Show"}
-        </button>
-      </div>
+      {/* Hidden webcam for face detection - positioned offscreen */}
+      <Webcam
+        ref={videoRef}
+        width={inputResolution.width}
+        height={inputResolution.height}
+        videoConstraints={videoConstraints}
+        onLoadedMetadata={handleVideoLoad}
+        onCanPlay={handleVideoLoad}
+        style={{ 
+          position: "absolute",
+          opacity: 0,
+          pointerEvents: "none"
+        }}
+        mirrored
+        autoPlay
+        playsInline
+      />
 
-      {/* Video/Canvas Container */}
-      {showDebug && (
-        <div style={{ position: "relative", padding: "12px" }}>
-          {!loaded && (
-            <div style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              fontSize: "12px",
-              color: "#666",
-            }}>
-              Loading model…
-            </div>
-          )}
-
-          <Webcam
-            ref={videoRef}
-            width={inputResolution.width}
-            height={inputResolution.height}
-            videoConstraints={videoConstraints}
-            onLoadedMetadata={handleVideoLoad}
-            onCanPlay={handleVideoLoad}
-            style={{ 
-              visibility: "hidden", 
-              position: "absolute",
-              width: "100%",
-              height: "100%",
-            }}
-            mirrored
-          />
-
-          <canvas
-            ref={canvasRef}
-            width={inputResolution.width}
-            height={inputResolution.height}
-            style={{ 
-              width: "320px",
-              height: "240px",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-            }}
-          />
-
-          <div style={{ marginTop: "8px", fontSize: "12px" }}>
-            <div>
-              <strong>Confidence:</strong> {Math.round(confidence * 100)}%
-            </div>
-            <button
-              onClick={handleRecalibrate}
-              style={{
-                marginTop: "8px",
-                width: "100%",
-                padding: "8px",
-                backgroundColor: "#2196f3",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-                fontSize: "12px",
-              }}
-            >
-              Recalibrate
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Hidden canvas for processing */}
+      <canvas
+        ref={canvasRef}
+        width={inputResolution.width}
+        height={inputResolution.height}
+        style={{ 
+          position: "absolute",
+          opacity: 0,
+          pointerEvents: "none"
+        }}
+      />
     </div>
   );
 };

@@ -8,8 +8,6 @@
  * @module
  */
 
-import type * as tasks from "../tasks.js";
-
 import type {
   ApiFromModules,
   FilterApi,
@@ -24,9 +22,7 @@ import type {
  * const myFunctionReference = api.myModule.myFunction;
  * ```
  */
-declare const fullApi: ApiFromModules<{
-  tasks: typeof tasks;
-}>;
+declare const fullApi: ApiFromModules<{}>;
 declare const fullApiWithMounts: typeof fullApi;
 
 export declare const api: FilterApi<

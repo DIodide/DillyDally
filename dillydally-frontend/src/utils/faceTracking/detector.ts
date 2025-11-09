@@ -25,9 +25,17 @@ export const runDetector = async (
   const detector = await faceLandmarksDetection.createDetector(model, detectorConfig);
 
   let isRunning = true;
+  let frameCount = 0;
+  let lastLogTime = Date.now();
   
   const detect = async () => {
     if (!isRunning) return;
+    
+    // Validate video dimensions before processing
+    if (!video || video.videoWidth === 0 || video.videoHeight === 0 || video.readyState < 2) {
+      // Video not ready or has been stopped, skip this frame silently
+      return;
+    }
     
     try {
       const estimationConfig = { flipHorizontal: true };
@@ -35,6 +43,15 @@ export const runDetector = async (
       const ctx = canvas.getContext("2d");
       
       if (!ctx) return;
+
+      frameCount++;
+      
+      // Log status every 5 seconds
+      if (Date.now() - lastLogTime > 5000) {
+        console.log(`📊 Face detection running: ${frameCount} frames processed, ${faces?.length || 0} faces detected`);
+        lastLogTime = Date.now();
+        frameCount = 0;
+      }
 
       // Choose the most prominent face if multiple
       const face = faces && faces.length ? faces[0] : null;
@@ -47,7 +64,11 @@ export const runDetector = async (
 
       if (cb) cb(state);
     } catch (error) {
-      console.error("Detection error:", error);
+      // Suppress texture size errors (happens when video is being cleaned up)
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (!errorMessage.includes("texture size") && !errorMessage.includes("0x0")) {
+        console.error("Detection error:", error);
+      }
     }
   };
 
