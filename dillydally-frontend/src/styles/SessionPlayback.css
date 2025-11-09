@@ -344,18 +344,27 @@
   font-weight: 600;
 }
 
+.activity-snapshots-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 .activity-snapshots {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   max-height: 300px;
   overflow-y: hidden;
+  overflow-x: visible;
   transition: max-height 0.3s ease;
+  box-sizing: border-box;
 }
 
 .activity-snapshots.expanded {
   max-height: 600px;
   overflow-y: auto;
+  overflow-x: visible;
 }
 
 .snapshot-preview {
@@ -389,7 +398,10 @@
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
-  margin-top: 0.25rem;
+  flex-shrink: 0; /* Prevent button from being compressed */
+  white-space: nowrap; /* Prevent text wrapping */
+  overflow: visible; /* Ensure button content is visible */
+  width: 100%; /* Ensure button takes full width */
 }
 
 .snapshot-more:hover {
