@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "../lib/convexApi";
+import type { Id } from "@convex/_generated/dataModel";
 
 interface SessionCaptureProps {
   intervalMs?: number;
   quality?: number;
   maxWidth?: number;
   isActive?: boolean;
+  sessionId: Id<"sessions"> | null;
   onSessionChange?: (isActive: boolean) => void;
 }
 
@@ -15,6 +17,7 @@ export default function SessionCapture({
   quality = 0.6,
   maxWidth = 1280,
   isActive = false,
+  sessionId,
   onSessionChange,
 }: SessionCaptureProps) {
   const [isRecording, setIsRecording] = useState(false);
@@ -22,7 +25,6 @@ export default function SessionCapture({
   const [captureCount, setCaptureCount] = useState(0);
 
   const user = useQuery(api.functions.currentUser);
-  const startSession = useMutation(api.functions.startSession);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -33,16 +35,11 @@ export default function SessionCapture({
   const abortControllerRef = useRef<AbortController | null>(null);
   const fallbackIntervalRef = useRef<number | null>(null);
   const isRecordingRef = useRef<boolean>(false);
-  const sessionIdRef = useRef<string | null>(null);
 
   const apiBase = import.meta.env.VITE_EXPRESS_URL;
 
   const captureAndUpload = async () => {
-    if (
-      !videoRef.current ||
-      !canvasRef.current ||
-      uploadInProgressRef.current
-    ) {
+    if (!videoRef.current || !canvasRef.current || uploadInProgressRef.current) {
       return;
     }
 
@@ -91,18 +88,8 @@ export default function SessionCapture({
           if (user) {
             formData.append("userId", user._id);
           }
-          if (sessionIdRef.current) {
-            console.log(
-              "📸 SessionCapture: Sending sessionId:",
-              sessionIdRef.current
-            );
-            formData.append("sessionId", sessionIdRef.current);
-          } else {
-            console.warn(
-              "📸 SessionCapture: No sessionId available, skipping upload"
-            );
-            uploadInProgressRef.current = false;
-            return;
+          if (sessionId) {
+            formData.append("sessionId", sessionId);
           }
 
           const response = await fetch(`${apiBase}/api/screenshots`, {
@@ -119,13 +106,11 @@ export default function SessionCapture({
 
           setCaptureCount((prev) => {
             const newCount = prev + 1;
-            console.log(
-              `📸 SessionCapture: Screenshot ${newCount} uploaded successfully`
-            );
+            console.log(`📸 SessionCapture: Screenshot ${newCount} uploaded successfully`);
             return newCount;
           });
-        } catch (err: any) {
-          if (err.name !== "AbortError") {
+        } catch (err: unknown) {
+          if (err instanceof Error && err.name !== "AbortError") {
             console.error("Upload error:", err);
             setError(`Upload failed: ${err.message}`);
           }
@@ -145,13 +130,10 @@ export default function SessionCapture({
       setError(null);
       setCaptureCount(0);
 
-      // Start a new session in the database
-      const newSessionId = await startSession();
-      if (!newSessionId) {
-        throw new Error("Failed to create session - no session ID returned");
+      // Ensure we have a session ID before starting capture
+      if (!sessionId) {
+        throw new Error("Session ID is required to start capture");
       }
-      console.log("📸 SessionCapture: Created session with ID:", newSessionId);
-      sessionIdRef.current = newSessionId;
 
       // Request screen capture
       console.log("📸 SessionCapture: Requesting screen share permission...");
@@ -178,10 +160,7 @@ export default function SessionCapture({
         onSessionChange(true);
       }
 
-      if (
-        videoRef.current &&
-        "requestVideoFrameCallback" in HTMLVideoElement.prototype
-      ) {
+      if (videoRef.current && "requestVideoFrameCallback" in HTMLVideoElement.prototype) {
         const callback = (now: number) => {
           if (!isRecordingRef.current) return;
 
@@ -192,13 +171,11 @@ export default function SessionCapture({
           }
 
           if (videoRef.current && isRecordingRef.current) {
-            frameCallbackIdRef.current =
-              videoRef.current.requestVideoFrameCallback(callback);
+            frameCallbackIdRef.current = videoRef.current.requestVideoFrameCallback(callback);
           }
         };
 
-        frameCallbackIdRef.current =
-          videoRef.current.requestVideoFrameCallback(callback);
+        frameCallbackIdRef.current = videoRef.current.requestVideoFrameCallback(callback);
       } else {
         // Fallback to setInterval if requestVideoFrameCallback is not supported
         fallbackIntervalRef.current = window.setInterval(
@@ -214,9 +191,10 @@ export default function SessionCapture({
           Math.min(intervalMs, 100)
         ); // Check at least every 100ms
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
       console.error("📸 SessionCapture: Failed to start capture:", err);
-      setError(`Failed to start capture: ${err.message}`);
+      setError(`Failed to start capture: ${errorMessage}`);
       isRecordingRef.current = false;
       setIsRecording(false);
 
@@ -269,9 +247,6 @@ export default function SessionCapture({
       videoRef.current.srcObject = null;
     }
 
-    // Clear session ID
-    sessionIdRef.current = null;
-
     uploadInProgressRef.current = false;
   };
 
@@ -281,9 +256,11 @@ export default function SessionCapture({
       "📸 SessionCapture: isActive changed to",
       isActive,
       "isRecording:",
-      isRecording
+      isRecording,
+      "sessionId:",
+      sessionId
     );
-    if (isActive && !isRecording) {
+    if (isActive && !isRecording && sessionId) {
       console.log("📸 SessionCapture: Starting capture...");
       startCapture();
     } else if (!isActive && isRecording) {
@@ -291,7 +268,7 @@ export default function SessionCapture({
       stopCapture();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isActive, isRecording]);
+  }, [isActive, isRecording, sessionId]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -310,8 +287,7 @@ export default function SessionCapture({
         padding: "1rem",
         border: "1px solid #ccc",
         borderRadius: "8px",
-      }}
-    >
+      }}>
       <h2>Screen Session Capture</h2>
       <div style={{ marginBottom: "1rem" }}>
         <button
@@ -326,21 +302,14 @@ export default function SessionCapture({
             border: "none",
             borderRadius: "4px",
             marginRight: "0.5rem",
-          }}
-        >
+          }}>
           {isRecording ? "Stop Session" : "Start Session"}
         </button>
         {isRecording && (
-          <span style={{ color: "#28a745", fontWeight: "bold" }}>
-            Recording... ({captureCount} captures)
-          </span>
+          <span style={{ color: "#28a745", fontWeight: "bold" }}>Recording... ({captureCount} captures)</span>
         )}
       </div>
-      {error && (
-        <div style={{ color: "#dc3545", marginBottom: "1rem" }}>
-          Error: {error}
-        </div>
-      )}
+      {error && <div style={{ color: "#dc3545", marginBottom: "1rem" }}>Error: {error}</div>}
       <div style={{ fontSize: "0.9rem", color: "#666" }}>
         <div>
           Interval: {intervalMs}ms | Quality: {quality} | Max Width: {maxWidth}
@@ -348,13 +317,7 @@ export default function SessionCapture({
         </div>
       </div>
       {/* Hidden video and canvas elements */}
-      <video
-        ref={videoRef}
-        style={{ display: "none" }}
-        playsInline
-        muted
-        autoPlay
-      />
+      <video ref={videoRef} style={{ display: "none" }} playsInline muted autoPlay />
       <canvas ref={canvasRef} style={{ display: "none" }} />
     </div>
   );

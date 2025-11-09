@@ -9,10 +9,12 @@ import WebcamDisplay from "./components/WebcamDisplay";
 import MessageBox from "./components/MessageBox";
 import type { AttentionState } from "./utils/faceTracking/classify";
 import logoImage from "./assets/logo.png";
-// import { api } from "./lib/convexApi";
+import { api } from "./lib/convexApi";
 import AuthForm from "./components/AuthForm";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
+import type { Id } from "@convex/_generated/dataModel";
 
 function SignOut() {
   const { signOut } = useAuthActions();
@@ -26,10 +28,15 @@ function App() {
   const [distractionAlerts, setDistractionAlerts] = useState(0);
   const [currentAttentionState, setCurrentAttentionState] = useState<AttentionState | null>(null);
 
+  const user = useQuery(api.functions.currentUser);
+  const startSession = useMutation(api.functions.startSession);
+  const createCameraSnapshot = useMutation(api.functions.createCameraSnapshot);
+
   const lastLogTimeRef = useRef(0);
   const lastStateRef = useRef("");
+  const [sessionId, setSessionId] = useState<Id<"sessions"> | null>(null);
 
-  const handleAttentionChange = (state: AttentionState) => {
+  const handleAttentionChange = async (state: AttentionState) => {
     // Update current attention state for webcam display
     setCurrentAttentionState(state);
 
@@ -49,17 +56,48 @@ function App() {
       );
       lastLogTimeRef.current = now;
       lastStateRef.current = state.state;
+
+      // Save camera snapshot to database if session is active and user is authenticated
+      if (isSessionActive && user && sessionId) {
+        try {
+          await createCameraSnapshot({
+            userId: user._id,
+            sessionId: sessionId,
+            timestamp: now,
+            attentionState: state.state as
+              | "away_left"
+              | "away_right"
+              | "away_up"
+              | "away_down"
+              | "no_face"
+              | "looking_at_screen",
+          });
+        } catch (error) {
+          console.error("Failed to save camera snapshot:", error);
+        }
+      }
     }
   };
 
-  const handleStart = () => {
+  const handleStart = async () => {
     console.log("⏱️ Timer: Start button clicked, activating session");
-    setIsSessionActive(true);
+    if (user) {
+      try {
+        const newSessionId = await startSession();
+        setSessionId(newSessionId);
+        setIsSessionActive(true);
+      } catch (error) {
+        console.error("Failed to start session:", error);
+      }
+    } else {
+      setIsSessionActive(true);
+    }
   };
 
   const handleStop = () => {
     console.log("⏱️ Timer: Stop button clicked, deactivating session");
     setIsSessionActive(false);
+    setSessionId(null);
   };
 
   const handleReset = () => {
@@ -124,7 +162,7 @@ function App() {
 
         {/* Hidden Session Capture Component - controls screenshot capture */}
         <div style={{ display: "none" }}>
-          <SessionCapture isActive={isSessionActive} onSessionChange={setIsSessionActive} />
+          <SessionCapture isActive={isSessionActive} sessionId={sessionId} onSessionChange={setIsSessionActive} />
         </div>
 
         {/* Face Tracking Component - hidden but active when session is running */}
