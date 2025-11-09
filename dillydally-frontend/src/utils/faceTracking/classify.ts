@@ -68,7 +68,7 @@ function getPoint(kps: any[], idx: number): Point | null {
   return p ? { x: p.x, y: p.y, z: p.z ?? 0 } : null;
 }
 
-function computeOrientation(face: any, canvas: HTMLCanvasElement) {
+function computeOrientation(face: any) {
   if (!face || !face.keypoints || face.keypoints.length < 400) {
     return { yaw: 0, pitch: 0, roll: 0, ok: false };
   }
@@ -158,8 +158,8 @@ export interface AttentionState {
   roll: number;
 }
 
-export function getAttentionState(face: any, canvas: HTMLCanvasElement): AttentionState {
-  const { yaw, pitch, roll, ok } = computeOrientation(face, canvas);
+export function getAttentionState(face: any): AttentionState {
+  const { yaw, pitch, roll, ok } = computeOrientation(face);
 
   if (!ok) {
     return { state: "no_face", confidence: 0, yaw: 0, pitch: 0, roll: 0 };

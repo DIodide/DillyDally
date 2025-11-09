@@ -20,7 +20,10 @@ export const runDetector = async (
   await tf.ready();
   
   const model = faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh;
-  const detectorConfig = { runtime: "tfjs" as const };
+  const detectorConfig = { 
+    runtime: "tfjs" as const,
+    refineLandmarks: false 
+  };
 
   const detector = await faceLandmarksDetection.createDetector(model, detectorConfig);
 
@@ -57,7 +60,7 @@ export const runDetector = async (
       const face = faces && faces.length ? faces[0] : null;
 
       // Classification first
-      const state = getAttentionState(face, canvas);
+      const state = getAttentionState(face);
 
       // Then draw overlays (mesh + optional direction triangles)
       drawMesh(face, ctx);
