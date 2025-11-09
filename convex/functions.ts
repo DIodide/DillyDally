@@ -57,7 +57,7 @@ export const getSessionActivities = query({
   handler: async (ctx, args) => {
     const snapshots = await ctx.db
       .query("snapshots")
-      .filter((q) => q.eq(q.field("sessionId"), args.sessionId))
+      .withIndex("by_session_id", (q) => q.eq("sessionId", args.sessionId))
       .collect();
 
     // Get unique activities - only extract activity field
@@ -103,7 +103,7 @@ export const getSessionSnapshots = query({
   handler: async (ctx, args) => {
     const snapshots = await ctx.db
       .query("snapshots")
-      .filter((q) => q.eq(q.field("sessionId"), args.sessionId))
+      .withIndex("by_session_id", (q) => q.eq("sessionId", args.sessionId))
       .order("desc")
       .collect();
     return snapshots;
@@ -117,7 +117,7 @@ export const getSessionCameraSnapshots = query({
   handler: async (ctx, args) => {
     const cameraSnapshots = await ctx.db
       .query("cameraSnapshots")
-      .filter((q) => q.eq(q.field("sessionId"), args.sessionId))
+      .withIndex("by_session_id", (q) => q.eq("sessionId", args.sessionId))
       .order("asc")
       .collect();
     return cameraSnapshots;
@@ -133,26 +133,26 @@ export const getSessionMetadata = query({
     // Get first and last snapshot timestamps for duration calculation
     const firstSnapshot = await ctx.db
       .query("snapshots")
-      .filter((q) => q.eq(q.field("sessionId"), args.sessionId))
+      .withIndex("by_session_id", (q) => q.eq("sessionId", args.sessionId))
       .order("asc")
       .first();
 
     const lastSnapshot = await ctx.db
       .query("snapshots")
-      .filter((q) => q.eq(q.field("sessionId"), args.sessionId))
+      .withIndex("by_session_id", (q) => q.eq("sessionId", args.sessionId))
       .order("desc")
       .first();
 
     // Get first and last camera snapshot timestamps as fallback
     const firstCameraSnapshot = await ctx.db
       .query("cameraSnapshots")
-      .filter((q) => q.eq(q.field("sessionId"), args.sessionId))
+      .withIndex("by_session_id", (q) => q.eq("sessionId", args.sessionId))
       .order("asc")
       .first();
 
     const lastCameraSnapshot = await ctx.db
       .query("cameraSnapshots")
-      .filter((q) => q.eq(q.field("sessionId"), args.sessionId))
+      .withIndex("by_session_id", (q) => q.eq("sessionId", args.sessionId))
       .order("desc")
       .first();
 
@@ -169,7 +169,7 @@ export const getSessionMetadata = query({
     // by only fetching activity and isProductive fields conceptually
     const allSnapshots = await ctx.db
       .query("snapshots")
-      .filter((q) => q.eq(q.field("sessionId"), args.sessionId))
+      .withIndex("by_session_id", (q) => q.eq("sessionId", args.sessionId))
       .collect();
 
     // Extract only needed fields immediately
@@ -202,7 +202,7 @@ export const getAllSessions = query({
     // Get all sessions for this user
     const sessions = await ctx.db
       .query("sessions")
-      .filter((q) => q.eq(q.field("userId"), userId))
+      .withIndex("by_user_id", (q) => q.eq("userId", userId))
       .order("desc")
       .collect();
 
@@ -212,26 +212,26 @@ export const getAllSessions = query({
         // Get first and last snapshot timestamps for duration (only 2 documents)
         const firstSnapshot = await ctx.db
           .query("snapshots")
-          .filter((q) => q.eq(q.field("sessionId"), session._id))
+          .withIndex("by_session_id", (q) => q.eq("sessionId", session._id))
           .order("asc")
           .first();
 
         const lastSnapshot = await ctx.db
           .query("snapshots")
-          .filter((q) => q.eq(q.field("sessionId"), session._id))
+          .withIndex("by_session_id", (q) => q.eq("sessionId", session._id))
           .order("desc")
           .first();
 
         // Get first and last camera snapshot timestamps as fallback (only 2 documents)
         const firstCameraSnapshot = await ctx.db
           .query("cameraSnapshots")
-          .filter((q) => q.eq(q.field("sessionId"), session._id))
+          .withIndex("by_session_id", (q) => q.eq("sessionId", session._id))
           .order("asc")
           .first();
 
         const lastCameraSnapshot = await ctx.db
           .query("cameraSnapshots")
-          .filter((q) => q.eq(q.field("sessionId"), session._id))
+          .withIndex("by_session_id", (q) => q.eq("sessionId", session._id))
           .order("desc")
           .first();
 
@@ -300,16 +300,16 @@ export const getWeeklyInsights = query({
     // Get all sessions for this user
     const allSessions = await ctx.db
       .query("sessions")
-      .filter((q) => q.eq(q.field("userId"), userId))
+      .withIndex("by_user_id", (q) => q.eq("userId", userId))
       .collect();
 
     // Get all snapshots for this user - only extract needed fields
     const allSnapshotDocs = await ctx.db
       .query("snapshots")
-      .filter((q) => q.eq(q.field("userId"), userId))
+      .withIndex("by_user_id", (q) => q.eq("userId", userId))
       .collect();
 
-    // Extract only needed fields (exclude imageBase64 and other large fields)
+    // Extract only needed fields (exclude imageUrl and other large fields)
     const allSnapshots = allSnapshotDocs.map((s) => ({
       timestamp: s.timestamp,
       isProductive: s.isProductive,
@@ -320,7 +320,7 @@ export const getWeeklyInsights = query({
     // Get all camera snapshots for this user - only extract needed fields
     const allCameraSnapshotDocs = await ctx.db
       .query("cameraSnapshots")
-      .filter((q) => q.eq(q.field("userId"), userId))
+      .withIndex("by_user_id", (q) => q.eq("userId", userId))
       .collect();
 
     // Extract only needed fields

@@ -17,10 +17,12 @@ export default defineSchema({
     activity: v.string(),
     currentTab: v.string(),
     imageBase64: v.optional(v.string()), // Base64 encoded screenshot image
-  }),
+  })
+    .index("by_session_id", ["sessionId"])
+    .index("by_user_id", ["userId"]),
   sessions: defineTable({
     userId: v.id("users"),
-  }),
+  }).index("by_user_id", ["userId"]),
   cameraSnapshots: defineTable({
     userId: v.id("users"),
     sessionId: v.id("sessions"),
@@ -33,5 +35,7 @@ export default defineSchema({
       v.literal("no_face"),
       v.literal("looking_at_screen")
     ),
-  }),
+  })
+    .index("by_session_id", ["sessionId"])
+    .index("by_user_id", ["userId"]),
 });
