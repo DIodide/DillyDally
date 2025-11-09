@@ -31,29 +31,30 @@ export const WebcamDisplay: React.FC<WebcamDisplayProps> = ({ attentionState, is
   }, [isActive]);
 
   const getStatusText = () => {
-    if (!attentionState) return "No face detected";
-    
+    if (!attentionState) return "Can't see you 👀";
+
     switch (attentionState.state) {
       case "looking_at_screen":
-        return "Looking at screen";
-      case "looking_left":
-        return "Looking left";
-      case "looking_right":
-        return "Looking right";
-      case "looking_up":
-        return "Looking up";
-      case "looking_down":
-        return "Looking down";
+        return "You're focused! ✨";
+      case "away_left":
+        return "Looking away... 👀";
+      case "away_right":
+        return "Looking away... 👀";
+      case "away_up":
+        return "Daydreaming? ☁️";
+      case "away_down":
+        return "Are you looking at your phone? 📱";
       case "no_face":
-        return "No face detected";
+        return "Where'd you go? 👻";
       default:
-        return attentionState.state;
+        return "Hmm... 🤔";
     }
   };
 
   const getStatusColor = () => {
     if (!attentionState || attentionState.state === "no_face") return "#666";
-    return attentionState.state === "looking_at_screen" ? "#28a745" : "#dc3545";
+    // Green for focused, orange/yellow for away states (less harsh than red)
+    return attentionState.state === "looking_at_screen" ? "#28a745" : "#ffc107";
   };
 
   if (!isActive) {
@@ -89,4 +90,3 @@ export const WebcamDisplay: React.FC<WebcamDisplayProps> = ({ attentionState, is
 };
 
 export default WebcamDisplay;
-

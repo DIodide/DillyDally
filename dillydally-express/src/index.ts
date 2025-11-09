@@ -176,6 +176,7 @@ app.post("/api/screenshots", upload.single("image"), async (req, res) => {
         summary: snapshotData.summary,
         activity: snapshotData.activity,
         currentTab: snapshotData.current_tab || "",
+        imageBase64: base64, // Store base64 encoded image
       });
       console.log(`[Snapshot] Created snapshot for session ${sessionId}`);
     } catch (snapshotError) {

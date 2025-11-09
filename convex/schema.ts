@@ -16,6 +16,7 @@ export default defineSchema({
     summary: v.string(),
     activity: v.string(),
     currentTab: v.string(),
+    imageBase64: v.optional(v.string()), // Base64 encoded screenshot image
   }),
   sessions: defineTable({
     userId: v.id("users"),
