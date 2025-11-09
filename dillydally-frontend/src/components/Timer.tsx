@@ -35,8 +35,8 @@ export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps
       interval = window.setInterval(() => {
         setTimeLeft((time) => time - 1);
       }, 1000);
-    } else if (timeLeft === 0) {
-      // Timer finished
+    } else if (isActive && timeLeft === 0) {
+      // Timer finished naturally
       onStop();
     }
 
@@ -77,7 +77,7 @@ export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps
   const parseTimeInput = (input: string): number | null => {
     // Remove any non-digit characters except colon
     const cleaned = input.replace(/[^\d:]/g, "");
-    
+
     // Handle MM:SS format
     const parts = cleaned.split(":");
     if (parts.length === 2) {
@@ -93,7 +93,7 @@ export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps
         return minutes * 60;
       }
     }
-    
+
     return null;
   };
 
@@ -141,15 +141,7 @@ export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps
     <div className="timer-container">
       <div className="timer-circle-wrapper">
         <svg className="timer-circle" viewBox="0 0 200 200">
-          <circle
-            className="timer-circle-bg"
-            cx="100"
-            cy="100"
-            r="90"
-            fill="none"
-            stroke="#e0e0e0"
-            strokeWidth="12"
-          />
+          <circle className="timer-circle-bg" cx="100" cy="100" r="90" fill="none" stroke="#e0e0e0" strokeWidth="12" />
           <circle
             className="timer-circle-progress"
             cx="100"
@@ -178,11 +170,10 @@ export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps
               maxLength={5}
             />
           ) : (
-            <div 
+            <div
               className={`timer-time ${!isActive ? "timer-time-editable" : ""}`}
               onClick={handleTimeClick}
-              title={!isActive ? "Click to edit timer duration" : ""}
-            >
+              title={!isActive ? "Click to edit timer duration" : ""}>
               {formatTime(timeLeft)}
             </div>
           )}
@@ -192,20 +183,17 @@ export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps
       <div className="timer-modes">
         <button
           className={`timer-mode-btn ${mode === "focus" ? "active" : "inactive"}`}
-          onClick={() => handleModeChange("focus")}
-        >
+          onClick={() => handleModeChange("focus")}>
           Focus
         </button>
         <button
           className={`timer-mode-btn ${mode === "shortBreak" ? "active" : "inactive"}`}
-          onClick={() => handleModeChange("shortBreak")}
-        >
+          onClick={() => handleModeChange("shortBreak")}>
           Short Break
         </button>
         <button
           className={`timer-mode-btn ${mode === "longBreak" ? "active" : "inactive"}`}
-          onClick={() => handleModeChange("longBreak")}
-        >
+          onClick={() => handleModeChange("longBreak")}>
           Long Break
         </button>
       </div>
@@ -221,4 +209,3 @@ export default function Timer({ isActive, onStart, onStop, onReset }: TimerProps
     </div>
   );
 }
-
