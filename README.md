@@ -16,7 +16,7 @@ By adding intelligent reflection and personalized analytics to the Pomodoro meth
 
 ![image.png](https://cdn.discordapp.com/attachments/1436914359342334002/1437034919359680642/image.png?ex=6911c68f&is=6910750f&hm=bc15ee2ea7b8c145aa2b789ee3408a800c540e0144449023297a741a03f1d380&)
 ![Pasted Graphic 7.png](https://media.discordapp.net/attachments/1436914359342334002/1437033476246343780/Pasted_Graphic_7.png?ex=6911c537&is=691073b7&hm=a7647e8ac371adb4b3ad4b4a00f1b5a1d6451b731de2b143f2b369e0bca2e508&=&format=webp&quality=lossless&width=2576&height=1220)
-![image.png](https://cdn.discordapp.com/attachments/1436914359342334002/1437034919359680642/image.png?ex=6911c68f&is=6910750f&hm=bc15ee2ea7b8c145aa2b789ee3408a800c540e0144449023297a741a03f1d380&)
+![Pasted Graphic 10.png](https://cdn.discordapp.com/attachments/1436914359342334002/1437033477601235124/Pasted_Graphic_10.png?ex=6911c537&is=691073b7&hm=68bf28857b0ad0c75de0bd2168c465ea171f3f473bb38d4eef98b1e5bab76201&)
 ---
 
 ## Tech Stack
