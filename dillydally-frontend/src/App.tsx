@@ -1,5 +1,5 @@
 import "./App.css";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import SessionCapture from "./components/SessionCapture";
 import FaceTracking from "./components/FaceTracking";
 import Timer from "./components/Timer";
@@ -7,7 +7,7 @@ import StatsCard from "./components/StatsCard";
 import Insights from "./components/Insights";
 import WebcamDisplay from "./components/WebcamDisplay";
 import MessageBox from "./components/MessageBox";
-import SessionSnapshots from "./components/SessionSnapshots";
+import SessionPlayback from "./components/SessionPlayback";
 import type { AttentionState } from "./utils/faceTracking/classify";
 import logoImage from "./assets/logo.png";
 import { api } from "./lib/convexApi";
@@ -27,6 +27,8 @@ function App() {
   const [breaks] = useState(0);
   const [distractionAlerts, setDistractionAlerts] = useState(0);
   const [currentAttentionState, setCurrentAttentionState] = useState<AttentionState | null>(null);
+  const [showPlayback, setShowPlayback] = useState(false);
+  const [endedSessionId, setEndedSessionId] = useState<Id<"sessions"> | null>(null);
 
   const user = useQuery(api.functions.currentUser);
   const startSession = useMutation(api.functions.startSession);
@@ -94,11 +96,18 @@ function App() {
     }
   };
 
-  const handleStop = () => {
+  const handleStop = useCallback(() => {
     console.log("⏱️ Timer: Stop button clicked, deactivating session");
     setIsSessionActive(false);
-    setSessionId(null);
-  };
+    // Show playback if we have a session ID
+    setSessionId((currentSessionId) => {
+      if (currentSessionId) {
+        setEndedSessionId(currentSessionId);
+        setShowPlayback(true);
+      }
+      return null;
+    });
+  }, []);
 
   const handleReset = () => {
     // Reset timer logic handled in Timer component
@@ -127,30 +136,46 @@ function App() {
           </div>
         </header>
 
-        {/* Two Column Layout */}
-        <div className="main-layout">
-          {/* Left Column: Timer */}
-          <div className="left-column">
-            <Timer isActive={isSessionActive} onStart={handleStart} onStop={handleStop} onReset={handleReset} />
-            {/* Compact Stats Row */}
-            <div className="compact-stats-row">
-              <StatsCard icon="☕" title="Breaks" value={breaks.toString()} iconBgColor="#d4f1f4" compact />
-              <StatsCard icon="⚠️" title="Distraction Alerts" value={distractionAlerts.toString()} iconBgColor="#ffe5e5" compact />
-            </div>
-          </div>
+        {/* Session Playback - shown when timer ends */}
+        {showPlayback && endedSessionId ? (
+          <SessionPlayback
+            sessionId={endedSessionId}
+            onDismiss={() => {
+              setShowPlayback(false);
+              setEndedSessionId(null);
+            }}
+          />
+        ) : (
+          <>
+            {/* Two Column Layout */}
+            <div className="main-layout">
+              {/* Left Column: Timer */}
+              <div className="left-column">
+                <Timer isActive={isSessionActive} onStart={handleStart} onStop={handleStop} onReset={handleReset} />
+                {/* Compact Stats Row */}
+                <div className="compact-stats-row">
+                  <StatsCard icon="☕" title="Breaks" value={breaks.toString()} iconBgColor="#d4f1f4" compact />
+                  <StatsCard
+                    icon="⚠️"
+                    title="Distraction Alerts"
+                    value={distractionAlerts.toString()}
+                    iconBgColor="#ffe5e5"
+                    compact
+                  />
+                </div>
+              </div>
 
-          {/* Right Column: Webcam and Messages */}
-          <div className="right-column">
-            <WebcamDisplay attentionState={currentAttentionState} isActive={isSessionActive} />
-            <MessageBox sessionId={sessionId} />
-          </div>
-        </div>
+              {/* Right Column: Webcam and Messages */}
+              <div className="right-column">
+                <WebcamDisplay attentionState={currentAttentionState} isActive={isSessionActive} />
+                <MessageBox sessionId={sessionId} />
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Insights Section */}
         <Insights />
-
-        {/* Session Snapshots Section */}
-        <SessionSnapshots sessionId={sessionId} />
 
         {/* Hidden Session Capture Component - controls screenshot capture */}
         <div style={{ display: "none" }}>
