@@ -44,6 +44,7 @@ This creates a **feedback loop**, turning ordinary Pomodoros into skill-building
 DillyDally transforms each focus session into a **feedback loop** that surfaces your attention behavior.
 
 ```mermaid
+<!-- insert mermaid diagram here -->
 flowchart LR
     subgraph Frontend["Frontend: React + Vite"]
         A[Start Session]
