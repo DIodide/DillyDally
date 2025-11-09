@@ -147,7 +147,7 @@ function App() {
           {/* Right Column: Webcam and Messages */}
           <div className="right-column">
             <WebcamDisplay attentionState={currentAttentionState} isActive={isSessionActive} />
-            <MessageBox messages={[]} />
+            <MessageBox sessionId={sessionId} />
           </div>
         </div>
 
