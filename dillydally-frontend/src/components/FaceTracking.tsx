@@ -76,12 +76,10 @@ export const FaceTracking: React.FC<FaceTrackingProps> = ({ onAttentionChange, o
         video,
         canvasRef.current,
         (result: AttentionState) => {
-          // Only process results when actively tracking
-          if (isTrackingRef.current && result) {
-            // Notify parent component of attention changes
-            if (onAttentionChange) {
-              onAttentionChange(result);
-            }
+          // Detector already checks isActive() before processing, so callback is only called when tracking
+          // Always pass results to parent - parent will check session state before saving
+          if (onAttentionChange && result) {
+            onAttentionChange(result);
           }
         },
         () => isTrackingRef.current, // Pass isTracking getter to detector
