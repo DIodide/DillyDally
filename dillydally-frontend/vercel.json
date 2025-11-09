@@ -1,7 +1,0 @@
-{
-  "buildCommand": "cd ../.. && npx convex codegen && cd dillydally-frontend && npm run copy-convex && npm run build",
-  "outputDirectory": "dist",
-  "installCommand": "cd ../.. && npm install && cd dillydally-frontend && npm install",
-  "framework": "vite"
-}
-
