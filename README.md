@@ -22,14 +22,14 @@ This creates a feedback loop and turns ordinary Pomodoros into actual deep focus
 
 ## Features
 
-- ⏱️ **Smart Pomodoro Timer** with customizable durations
-- 👁️ **Real-time Face Tracking** - detects when you look away
-- 📸 **Automated Screenshot Capture** - periodic screen monitoring
-- 🤖 **AI-powered Activity Analysis** via OpenAI Vision API
-- 📊 **Live Distraction Alerts** - real-time attention feedback
-- 🔐 **Secure Authentication** via Convex Auth
-- 💾 **Real-time Database Sync** - all data stored in Convex
-- 📱 **Responsive Design** - works on desktop and tablet
+- **Smart Pomodoro Timer** with customizable durations
+- **Real-time Face Tracking** - detects when you look away
+- **Automated Screenshot Capture** - periodic screen monitoring
+- **AI-powered Activity Analysis** via OpenAI Vision API
+- **Live Distraction Alerts** - real-time attention feedback
+- **Secure Authentication** via Convex Auth
+- **Real-time Database Sync** - all data stored in Convex
+- **Responsive Design** - works on desktop and tablet
 
 ---
 
@@ -101,7 +101,7 @@ graph TB
 
 ---
 
-## 🔄 Data Flow
+## Data Flow
 
 ```mermaid
 sequenceDiagram
@@ -333,6 +333,6 @@ DillyDally is not a timer —
 ### **See your focus. Improve your focus.**
 
 ```
-Built with intention, curiosity, and deep work energy ✨☕
+Built with intention, curiosity, and deep work energy
 HackPrinceton 2025
 ```
