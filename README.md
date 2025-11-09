@@ -45,27 +45,6 @@ DillyDally transforms each focus session into a **feedback loop** that surfaces 
 
 ```mermaid
 <!-- insert mermaid diagram here -->
-flowchart LR
-    subgraph Frontend["Frontend: React + Vite"]
-        A[Start Session]
-        B[Timer Running]
-        C[Capture Focus Signals<br/>(tab switches, optional gaze cues)]
-        D[End Session]
-    end
-
-    subgraph Backend["Backend: Express.js"]
-        E[Receive Signals & Optional Images]
-        F[LLM Generates Micro-Insights]
-        G[Return Insight Chunks]
-    end
-
-    subgraph Convex["Convex: DB + Functions"]
-        H[Store Micro-Insights]
-        I[Aggregate Into Session Summary]
-        J[Serve Focus Report to UI]
-    end
-
-    A --> B --> C --> E --> F --> G --> H --> I --> J --> D
 
 ```
 
